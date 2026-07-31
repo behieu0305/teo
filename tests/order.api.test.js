@@ -14,6 +14,7 @@ function testContext(overrides = {}) {
     NODE_ENV: 'test',
     TELEGRAM_BOT_TOKEN: '123456789:abcdefghijklmnopqrstuvwxyzABCDE',
     ALLOW_DEV_TELEGRAM_BYPASS: true,
+    ORDERS_ENABLED: true,
     managerIds: [111],
     webhookPath: '/v1/telegram-webhook',
     TELEGRAM_WEBHOOK_SECRET: 'test_secret_token_12345',
