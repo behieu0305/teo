@@ -1,0 +1,18 @@
+NODE_ENV=production
+PORT=3000
+
+# Có thể bỏ trống hai biến này trên Railway nếu dịch vụ đã có Public Domain.
+# Ứng dụng sẽ tự dùng https://$RAILWAY_PUBLIC_DOMAIN.
+PUBLIC_BASE_URL=
+MINI_APP_URL=
+
+TELEGRAM_BOT_TOKEN=replace_with_new_bot_token
+TELEGRAM_MANAGER_IDS=123456789
+TELEGRAM_WEBHOOK_SECRET=replace_with_long_random_secret
+
+# Railway MongoDB: đặt giá trị tham chiếu là ${{MongoDB.MONGO_URL}}
+MONGODB_URI=
+
+ALLOW_DEV_TELEGRAM_BYPASS=false
+AUTO_SET_WEBHOOK=true
+ORDERS_ENABLED=false

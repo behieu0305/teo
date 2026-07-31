@@ -1,0 +1,30 @@
+{
+  "name": "telegram-miniapp-ordering",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fresh Telegram Mini App + Bot ordering system",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "set-webhook": "node scripts/set-webhook.js"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "dotenv": "16.6.1",
+    "express": "5.1.0",
+    "express-rate-limit": "7.5.1",
+    "helmet": "8.1.0",
+    "mongoose": "8.16.5",
+    "telegraf": "4.16.3",
+    "zod": "4.0.10"
+  },
+  "devDependencies": {
+    "supertest": "7.1.4",
+    "vitest": "3.2.4"
+  }
+}

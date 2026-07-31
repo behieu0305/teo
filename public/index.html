@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Menu đặt món</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <p class="eyebrow">TELEGRAM MINI APP</p>
+        <h1>Menu đặt món</h1>
+        <p id="telegram-user" class="muted">Đang nhận thông tin Telegram…</p>
+      </header>
+
+      <section>
+        <h2>Chọn món</h2>
+        <div id="menu" class="menu-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Giỏ hàng</h2>
+        <div id="cart-empty" class="muted">Chưa có món nào.</div>
+        <div id="cart"></div>
+        <div class="total-row">
+          <span>Tổng cộng</span>
+          <strong id="total">0 ₫</strong>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Thông tin nhận hàng</h2>
+        <label>
+          Số điện thoại
+          <input id="phone" type="tel" autocomplete="tel" maxlength="20" required />
+        </label>
+        <label>
+          Địa chỉ nhận hàng
+          <textarea id="address" rows="3" maxlength="300" required></textarea>
+        </label>
+        <label>
+          Ghi chú
+          <textarea id="note" rows="2" maxlength="500"></textarea>
+        </label>
+        <button id="submit-order" type="button">Gửi đơn hàng</button>
+        <p id="feedback" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+  </body>
+</html>
