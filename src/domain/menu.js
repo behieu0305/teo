@@ -1,4 +1,37 @@
 // Menu mẫu dành cho giao diện V2. Giữ ORDERS_ENABLED=false cho đến khi thay bằng menu thật.
+function escapeXml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');
+}
+
+function dishPlaceholder(name, symbol = '🍽️') {
+  const safeName = escapeXml(name);
+  const safeSymbol = escapeXml(symbol);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#6f2f25"/>
+        <stop offset="1" stop-color="#45261d"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="75%" cy="20%" r="70%">
+        <stop offset="0" stop-color="#f4ce7d" stop-opacity=".32"/>
+        <stop offset="1" stop-color="#f4ce7d" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="960" height="720" fill="url(#bg)"/>
+    <rect width="960" height="720" fill="url(#glow)"/>
+    <circle cx="480" cy="305" r="168" fill="#fffaf2" fill-opacity=".09" stroke="#f4ce7d" stroke-opacity=".55" stroke-width="3"/>
+    <text x="480" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="112">${safeSymbol}</text>
+    <text x="480" y="545" text-anchor="middle" fill="#fff8eb" font-family="Arial, sans-serif" font-size="44" font-weight="700">${safeName}</text>
+    <text x="480" y="594" text-anchor="middle" fill="#f4ce7d" font-family="Arial, sans-serif" font-size="22" font-weight="600" letter-spacing="3">SAIGON STREET FOOD</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 export const menuCatalog = Object.freeze([
   {
     id: 'bo-kho',
@@ -6,7 +39,7 @@ export const menuCatalog = Object.freeze([
     description: 'Bò hầm đậm vị, dùng kèm bánh mì và rau thơm.',
     category: 'Món chính',
     price: 3000,
-    imageUrl: '/images/menu/bo-kho.webp',
+    imageUrl: dishPlaceholder('Bò kho', '🥘'),
     available: true,
     featured: true,
     badge: 'Bán chạy'
@@ -39,7 +72,7 @@ export const menuCatalog = Object.freeze([
     description: 'Gà giòn da, cơm nóng và đồ chua ăn kèm.',
     category: 'Cơm & Bánh mì',
     price: 3000,
-    imageUrl: '/images/menu/com-ga.webp',
+    imageUrl: dishPlaceholder('Cơm gà xối mỡ', '🍗'),
     available: true,
     featured: true,
     badge: 'Bán chạy'
@@ -50,7 +83,7 @@ export const menuCatalog = Object.freeze([
     description: 'Bánh mì thịt nướng thơm, rau tươi và sốt nhà làm.',
     category: 'Cơm & Bánh mì',
     price: 2000,
-    imageUrl: '/images/menu/banh-mi-thit-nuong.webp',
+    imageUrl: dishPlaceholder('Bánh mì thịt nướng', '🥖'),
     available: true,
     featured: true,
     badge: 'Bán chạy'
@@ -61,7 +94,7 @@ export const menuCatalog = Object.freeze([
     description: 'Bún tươi, thịt nướng, rau và nước mắm đậm vị.',
     category: 'Món chính',
     price: 3000,
-    imageUrl: '/images/menu/bun-thit-nuong.webp',
+    imageUrl: dishPlaceholder('Bún thịt nướng', '🍜'),
     available: true,
     featured: true,
     badge: 'Bán chạy'
@@ -82,7 +115,7 @@ export const menuCatalog = Object.freeze([
     description: 'Mì xào nóng cùng thịt bò và rau củ.',
     category: 'Món chính',
     price: 2800,
-    imageUrl: '/images/menu/mi-xao-bo.webp',
+    imageUrl: dishPlaceholder('Mì xào bò', '🍜'),
     available: true,
     featured: false
   },
@@ -92,7 +125,7 @@ export const menuCatalog = Object.freeze([
     description: 'Khoai chiên vàng giòn, dùng nóng với sốt.',
     category: 'Ăn vặt',
     price: 1500,
-    imageUrl: '/images/menu/khoai-tay-chien.webp',
+    imageUrl: dishPlaceholder('Khoai tây chiên', '🍟'),
     available: true,
     featured: false
   },
@@ -102,7 +135,7 @@ export const menuCatalog = Object.freeze([
     description: 'Trà tắc chua dịu, tươi mát và ít ngọt.',
     category: 'Thức uống',
     price: 1000,
-    imageUrl: '/images/menu/tra-tac.webp',
+    imageUrl: dishPlaceholder('Trà tắc', '🍹'),
     available: true,
     featured: false
   },
@@ -112,7 +145,7 @@ export const menuCatalog = Object.freeze([
     description: 'Cà phê Việt cùng sữa, thơm béo vừa phải.',
     category: 'Thức uống',
     price: 1500,
-    imageUrl: '/images/menu/ca-phe-sua.webp',
+    imageUrl: dishPlaceholder('Cà phê sữa', '☕'),
     available: true,
     featured: false,
     badge: 'Bán chạy'
@@ -123,7 +156,7 @@ export const menuCatalog = Object.freeze([
     description: 'Sinh tố xoài vàng sánh, ngọt thơm.',
     category: 'Thức uống',
     price: 1800,
-    imageUrl: '/images/menu/sinh-to-xoai.webp',
+    imageUrl: dishPlaceholder('Sinh tố xoài', '🥭'),
     available: true,
     featured: false
   }
