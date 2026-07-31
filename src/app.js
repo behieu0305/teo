@@ -14,7 +14,8 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", 'https://telegram.org'],
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:'],
           connectSrc: ["'self'"]
         }
