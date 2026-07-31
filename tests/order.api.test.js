@@ -54,7 +54,7 @@ describe('POST /api/orders', () => {
     });
 
     expect(response.status).toBe(201);
-    expect(response.body.total).toBe(150000);
+    expect(response.body.total).toBe(7000);
     expect(response.body.status).toBe('PENDING');
     expect(sendMessage).toHaveBeenCalledTimes(1);
   });

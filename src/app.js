@@ -51,7 +51,13 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
   });
 
   app.get('/api/config', (_req, res) => {
-    res.json({ orderingEnabled: config.ORDERS_ENABLED });
+    res.json({
+      orderingEnabled: config.ORDERS_ENABLED,
+      currencyLabel: 'Rs',
+      shopName: 'Saigon Street Food',
+      location: 'Colombo',
+      openingHours: '07:00 AM – 05:00 PM'
+    });
   });
   app.get('/api/menu', (_req, res) => {
     res.json(menuCatalog.filter((item) => item.available));

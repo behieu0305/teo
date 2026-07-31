@@ -1,11 +1,8 @@
 import { Markup } from 'telegraf';
 import { statusLabel, ORDER_STATUS } from '../domain/order-status.js';
 
-const money = new Intl.NumberFormat('vi-VN', {
-  style: 'currency',
-  currency: 'VND',
-  maximumFractionDigits: 0
-});
+const number = new Intl.NumberFormat('en-LK', { maximumFractionDigits: 0 });
+const money = { format: (value) => `Rs ${number.format(value)}` };
 
 function escapeHtml(value) {
   return String(value)
