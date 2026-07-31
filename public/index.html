@@ -50,7 +50,7 @@
           <div class="hero-content">
             <span class="hero-kicker">Bếp Việt tinh tế</span>
             <p class="hero-brand">Saigon Street Food</p>
-            <h1 id="hero-title">Hương vị Việt,<br />được nấu thật chăm.</h1>
+            <h1 id="hero-title">Hương vị Việt,<br />được nấu thật chậm.</h1>
             <p class="hero-copy">
               Chọn món nhanh, thêm ghi chú và gửi đơn trực tiếp đến quán qua Telegram.
             </p>
@@ -110,15 +110,37 @@
 
         <section class="order-process" aria-labelledby="process-title">
           <div class="process-intro">
+            <svg class="process-truck" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 17h4V5H2v12h3" />
+              <path d="M14 9h4l4 4v4h-3" />
+              <circle cx="7.5" cy="17.5" r="2.5" />
+              <circle cx="16.5" cy="17.5" r="2.5" />
+            </svg>
             <span>Đặt món dễ dàng</span>
             <h2 id="process-title">Giao tận nơi hoặc ghé quán lấy món.</h2>
-            <p>Đơn được gửi đến Telegram của quán để quản lý xác nhận trước khi chuẩn bị.</p>
+            <p>Sau khi đơn được gửi, SaiGon Street Food sẽ xác nhận thời gian chuẩn bị và giao món qua Telegram.</p>
+            <a class="process-link" href="https://t.me/saigonstreetfood_bot" target="_blank" rel="noreferrer">
+              <span>Nhắn Telegram ngay</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
+            </a>
           </div>
-          <ol>
-            <li><b>1. Chọn món</b><span>Chạm vào món để thêm số lượng.</span></li>
-            <li><b>2. Xác nhận đơn</b><span>Điền thông tin nhận hàng.</span></li>
-            <li><b>3. Quán tiếp nhận</b><span>Quản lý nhận đơn qua Telegram.</span></li>
-            <li><b>4. Thưởng thức</b><span>Quán liên hệ và giao món.</span></li>
+          <ol class="process-steps">
+            <li>
+              <span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1" /><circle cx="18" cy="20" r="1" /><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 1.9-1.4L21 7H6" /></svg></span>
+              <div><b>1. Chọn món</b><span>Chạm vào món để thêm số lượng và ghi chú riêng.</span></div>
+            </li>
+            <li>
+              <span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18" /></svg></span>
+              <div><b>2. Xác nhận đơn</b><span>Điền thông tin nhận món và phương thức thanh toán.</span></div>
+            </li>
+            <li>
+              <span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3v-7a4 4 0 0 1-1-2.7V7a4 4 0 0 1 4-4h11a4 4 0 0 1 4 4Z" /></svg></span>
+              <div><b>3. Quán tiếp nhận</b><span>Đơn hàng được gửi đến Telegram của SaiGon Street Food.</span></div>
+            </li>
+            <li>
+              <span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m16 16 2 2 4-4" /><path d="M21 10V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7" /><path d="M3 9h18" /></svg></span>
+              <div><b>4. Thưởng thức</b><span>Quán liên hệ xác nhận trước khi chuẩn bị hoặc giao món.</span></div>
+            </li>
           </ol>
         </section>
       </main>
