@@ -60,9 +60,11 @@ Domain, ứng dụng tự dùng `https://$RAILWAY_PUBLIC_DOMAIN`.
 `ORDERS_ENABLED=false` giữ hệ thống ở chế độ chỉ xem menu. Chỉ đổi thành `true`
 sau khi đã:
 
-- Thay menu mẫu trong `src/domain/menu.js` bằng món, giá và ảnh thật.
-- Kiểm tra lại toàn bộ giá (menu mẫu đang để nhiều món cùng một mức giá).
+- Đối chiếu lại 58 món và giá trong `src/domain/menu.js` với bảng giá tại quán.
 - Thử đặt một đơn và xác nhận quản lý nhận được tin nhắn Telegram.
+
+Ảnh món chưa có nên toàn bộ đang hiển thị placeholder. Việc này **không chặn**
+mở bán — menu vẫn đọc được đầy đủ tên Việt, tên Trung và giá.
 
 ## 5. Hành vi khi khởi động
 

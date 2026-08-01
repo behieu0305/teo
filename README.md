@@ -74,8 +74,32 @@ Cả hai route `/api/orders` đều yêu cầu header `X-Telegram-Init-Data`.
 - `Idempotency-Key` chặn đơn trùng khi mạng chập chờn hoặc khách bấm hai lần.
 - Không đưa `.env` hoặc Bot Token lên GitHub — `.gitignore` đã chặn sẵn.
 
+## Thực đơn
+
+`src/domain/menu.js` chứa **58 món thật** của quán, tên song ngữ Việt – Trung,
+chia thành 9 nhóm để khách không phải cuộn qua một danh sách dài:
+
+| Nhóm | 中文 | Số món |
+|---|---|---|
+| Phở & Bún | 粉面类 | 7 |
+| Cơm | 饭类 | 4 |
+| Bánh mì | 越南面包 | 6 |
+| Mì xào | 炒面 | 2 |
+| Món đặc biệt | 特色菜 | 5 |
+| Ăn vặt | 小吃 | 8 |
+| Cà phê | 咖啡 | 4 |
+| Sinh tố & Nước ép | 奶昔果汁 | 9 |
+| Trà & Giải khát | 茶饮 | 13 |
+
+Giá tính bằng LKR, hiển thị với ký hiệu `Rs`. Khách tìm món được bằng cả tiếng
+Việt (không cần dấu) lẫn tiếng Trung.
+
 ## Trước khi mở bán thật
 
-`ORDERS_ENABLED=false` giữ hệ thống ở chế độ chỉ xem menu. Menu và ảnh trong
-`src/domain/menu.js` hiện là **dữ liệu mẫu**. Chỉ đổi `ORDERS_ENABLED=true`
-sau khi đã thay bằng món, giá và ảnh thật.
+`ORDERS_ENABLED=false` giữ hệ thống ở chế độ chỉ xem menu. Món và giá đã là dữ
+liệu thật, nhưng **ảnh món thì chưa có** — mọi món đang hiển thị placeholder.
+Xem `src/domain/menu.js` để biết lý do bộ ảnh cũ bị loại bỏ. Khi có ảnh thật,
+đặt file vào `public/images/menu/` rồi điền `imageUrl` cho từng món.
+
+Muốn làm nổi bật vài món ở khu "Món được chọn nhiều", đặt `featured: true` và
+`badge: 'Bán chạy'` cho đúng những món quán thật sự bán chạy.

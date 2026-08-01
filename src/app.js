@@ -2,7 +2,7 @@ import path from 'node:path';
 import express from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { menuCatalog } from './domain/menu.js';
+import { CATEGORIES, menuCatalog } from './domain/menu.js';
 import { createOrderRouter } from './routes/order-routes.js';
 import { logger, requestLogger } from './utils/logger.js';
 
@@ -80,7 +80,15 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
     });
   });
   app.get('/api/menu', (_req, res) => {
-    res.json(menuCatalog.filter((item) => item.available));
+    const items = menuCatalog.filter((item) => item.available);
+    // Categories ship with the menu so the client renders them in the shop's
+    // intended order rather than in whatever order the dishes happen to arrive.
+    res.json({
+      categories: CATEGORIES.filter((category) =>
+        items.some((item) => item.category === category.id)
+      ),
+      items
+    });
   });
   app.use(
     '/api/orders',

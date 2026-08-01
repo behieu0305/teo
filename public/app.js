@@ -3,8 +3,9 @@ const tg = window.Telegram?.WebApp;
 const state = {
   menu: [],
   cart: new Map(),
+  categories: [],
   orderingEnabled: false,
-  activeCategory: 'Tất cả',
+  activeCategory: '__all__',
   search: '',
   config: {
     currencyLabel: 'Rs',
@@ -69,17 +70,42 @@ function renderTelegramUser() {
     : 'Mở trong Telegram để đặt món và nhận cập nhật đơn hàng.';
 }
 
-function categories() {
-  return ['Tất cả', ...new Set(state.menu.map((item) => item.category))];
+const ALL = '__all__';
+
+function categoryName(id) {
+  return state.categories.find((category) => category.id === id)?.name ?? id;
+}
+
+function categoryNameZh(id) {
+  return state.categories.find((category) => category.id === id)?.nameZh ?? '';
 }
 
 function filteredMenu() {
   const query = normalize(state.search);
   return state.menu.filter((item) => {
-    const categoryMatch = state.activeCategory === 'Tất cả' || item.category === state.activeCategory;
-    const searchMatch = !query || normalize(`${item.name} ${item.description} ${item.category}`).includes(query);
+    const categoryMatch = state.activeCategory === ALL || item.category === state.activeCategory;
+    // Chinese names are matched raw: stripping diacritics does nothing for Han
+    // characters, and lowercasing them is a no-op, so a plain substring test is
+    // what lets a Chinese-reading customer find a dish.
+    const searchMatch =
+      !query ||
+      normalize(`${item.name} ${categoryName(item.category)}`).includes(query) ||
+      `${item.nameZh}${categoryNameZh(item.category)}`.includes(state.search.trim());
     return categoryMatch && searchMatch;
   });
+}
+
+// Groups the visible dishes under their category heading. With 58 dishes a flat
+// list is a wall of cards, so the headings give the eye somewhere to rest.
+function groupByCategory(items) {
+  const order = state.categories.map((category) => category.id);
+  const buckets = new Map();
+  for (const item of items) {
+    buckets.set(item.category, [...(buckets.get(item.category) ?? []), item]);
+  }
+  return order
+    .filter((id) => buckets.has(id))
+    .map((id) => ({ id, name: categoryName(id), nameZh: categoryNameZh(id), items: buckets.get(id) }));
 }
 
 function cartQuantity(id) {
@@ -118,7 +144,7 @@ function featureCard(item) {
       ${item.badge ? `<span class="badge">${escapeHtml(item.badge)}</span>` : ''}
       <div class="feature-content">
         <div class="feature-top"><h4>${escapeHtml(item.name)}</h4><span class="price">${money(item.price)}</span></div>
-        <p>${escapeHtml(item.description)}</p>
+        <p class="name-zh" lang="zh">${escapeHtml(item.nameZh ?? '')}</p>
         ${quantityMarkup(item)}
       </div>
     </article>`;
@@ -129,20 +155,28 @@ function menuCard(item) {
     <article class="menu-card">
       <div class="menu-card-image">
         ${dishImage(item)}
-        ${item.badge ? `<span class="badge">${escapeHtml(item.badge)}</span>` : ''}
       </div>
       <div class="menu-card-content">
-        <span class="menu-category">${escapeHtml(item.category)}</span>
-        <div class="menu-card-top"><h4>${escapeHtml(item.name)}</h4><span class="price">${money(item.price)}</span></div>
-        <p>${escapeHtml(item.description)}</p>
+        <div class="menu-card-top">
+          <h4>${escapeHtml(item.name)}</h4>
+          <span class="price">${money(item.price)}</span>
+        </div>
+        <p class="name-zh" lang="zh">${escapeHtml(item.nameZh ?? '')}</p>
         ${quantityMarkup(item, true)}
       </div>
     </article>`;
 }
 
 function renderCategories() {
-  nodes.categories.innerHTML = categories()
-    .map((category) => `<button type="button" class="category-button${category === state.activeCategory ? ' is-active' : ''}" data-category="${escapeHtml(category)}">${escapeHtml(category)}</button>`)
+  const tabs = [{ id: ALL, name: 'Tất cả', nameZh: '全部' }, ...state.categories];
+  nodes.categories.innerHTML = tabs
+    .map(
+      (category) => `<button type="button" class="category-button${
+        category.id === state.activeCategory ? ' is-active' : ''
+      }" data-category="${escapeHtml(category.id)}">${escapeHtml(category.name)}<small lang="zh">${escapeHtml(
+        category.nameZh
+      )}</small></button>`
+    )
     .join('');
 }
 
@@ -150,11 +184,31 @@ function renderMenu() {
   const visible = filteredMenu();
   const featured = state.menu.filter((item) => item.featured).slice(0, 6);
 
-  nodes.menu.innerHTML = visible.map(menuCard).join('');
-  nodes.menuEmpty.hidden = visible.length > 0;
-  nodes.menuCount.textContent = `${state.menu.length} món trong thực đơn`;
+  // One category selected means the heading would just repeat the active tab,
+  // so only the mixed views get section headings.
+  const grouped = groupByCategory(visible);
+  nodes.menu.innerHTML =
+    grouped.length > 1
+      ? grouped
+          .map(
+            (group) => `
+              <h3 class="menu-group-heading" id="group-${escapeHtml(group.id)}">
+                <span>${escapeHtml(group.name)}</span>
+                <small lang="zh">${escapeHtml(group.nameZh)}</small>
+                <em>${group.items.length} món</em>
+              </h3>
+              <div class="menu-grid">${group.items.map(menuCard).join('')}</div>`
+          )
+          .join('')
+      : `<div class="menu-grid">${visible.map(menuCard).join('')}</div>`;
 
-  const showFeatured = state.activeCategory === 'Tất cả' && !state.search && featured.length > 0;
+  nodes.menuEmpty.hidden = visible.length > 0;
+  nodes.menuCount.textContent =
+    visible.length === state.menu.length
+      ? `${state.menu.length} món trong thực đơn`
+      : `${visible.length}/${state.menu.length} món`;
+
+  const showFeatured = state.activeCategory === ALL && !state.search && featured.length > 0;
   nodes.featuredSection.hidden = !showFeatured;
   nodes.featured.innerHTML = showFeatured ? featured.map(featureCard).join('') : '';
   renderCategories();
@@ -357,7 +411,7 @@ function bindEvents() {
   });
   nodes.search.addEventListener('input', () => { state.search = nodes.search.value; renderMenu(); });
   document.querySelector('#show-all').addEventListener('click', () => {
-    state.activeCategory = 'Tất cả';
+    state.activeCategory = ALL;
     state.search = '';
     nodes.search.value = '';
     renderMenu();
@@ -389,7 +443,13 @@ async function init() {
 
     state.config = { ...state.config, ...(await configResponse.json()) };
     state.orderingEnabled = Boolean(state.config.orderingEnabled);
-    state.menu = await menuResponse.json();
+    const menu = await menuResponse.json();
+    // Older deploys returned a bare array; accept both so a cached
+    // Mini App shell does not break against a newer server.
+    state.menu = Array.isArray(menu) ? menu : menu.items;
+    state.categories = Array.isArray(menu)
+      ? [...new Set(state.menu.map((i) => i.category))].map((id) => ({ id, name: id, nameZh: '' }))
+      : menu.categories;
     renderMenu();
     renderCart();
   } catch (error) {
