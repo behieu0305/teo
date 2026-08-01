@@ -1,3 +1,17 @@
+const menuImageStyles = document.createElement('link');
+menuImageStyles.rel = 'stylesheet';
+menuImageStyles.href = '/menu-images.css';
+document.head.append(menuImageStyles);
+
+document.addEventListener('error', (event) => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement)) return;
+  const fallback = image.dataset.fallback;
+  if (!fallback || image.dataset.fallbackApplied) return;
+  image.dataset.fallbackApplied = 'true';
+  image.src = fallback;
+}, true);
+
 const tg = window.Telegram?.WebApp;
 
 const state = {
@@ -54,6 +68,12 @@ function money(value) {
   return `${state.config.currencyLabel} ${Number(value || 0).toLocaleString('en-LK')}`;
 }
 
+function itemPrice(item) {
+  return item.priceLabel
+    ? `${state.config.currencyLabel} ${item.priceLabel}`
+    : money(item.price);
+}
+
 function normalize(value) {
   return String(value || '')
     .normalize('NFD')
@@ -99,13 +119,18 @@ function quantityMarkup(item, compact = false) {
     </div>`;
 }
 
+function imageMarkup(item, { alt = item.name, className = '', loading = 'lazy' } = {}) {
+  const classes = className ? ` class="${className}"` : '';
+  return `<img${classes} src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(alt)}" width="800" height="600" loading="${loading}" decoding="async" data-fallback="/images/menu/fallback.svg" />`;
+}
+
 function featureCard(item) {
   return `
     <article class="feature-card">
-      <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" loading="lazy" />
+      ${imageMarkup(item)}
       ${item.badge ? `<span class="badge">${escapeHtml(item.badge)}</span>` : ''}
       <div class="feature-content">
-        <div class="feature-top"><h4>${escapeHtml(item.name)}</h4><span class="price">${money(item.price)}</span></div>
+        <div class="feature-top"><h4>${escapeHtml(item.name)}</h4><span class="price">${itemPrice(item)}</span></div>
         <p>${escapeHtml(item.description)}</p>
         ${quantityMarkup(item)}
       </div>
@@ -116,12 +141,12 @@ function menuCard(item) {
   return `
     <article class="menu-card">
       <div class="menu-card-image">
-        <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" loading="lazy" />
+        ${imageMarkup(item)}
         ${item.badge ? `<span class="badge">${escapeHtml(item.badge)}</span>` : ''}
       </div>
       <div class="menu-card-content">
         <span class="menu-category">${escapeHtml(item.category)}</span>
-        <div class="menu-card-top"><h4>${escapeHtml(item.name)}</h4><span class="price">${money(item.price)}</span></div>
+        <div class="menu-card-top"><h4>${escapeHtml(item.name)}</h4><span class="price">${itemPrice(item)}</span></div>
         <p>${escapeHtml(item.description)}</p>
         ${quantityMarkup(item, true)}
       </div>
@@ -183,8 +208,8 @@ function renderCart() {
   nodes.cartEmpty.hidden = items.length > 0;
   nodes.cart.innerHTML = items.map((item) => `
     <div class="cart-row">
-      <img src="${escapeHtml(item.imageUrl)}" alt="" />
-      <div class="cart-row-info"><strong>${escapeHtml(item.name)}</strong><small>${money(item.price)} × ${item.quantity}</small></div>
+      ${imageMarkup(item, { alt: item.name, className: 'cart-thumb' })}
+      <div class="cart-row-info"><strong>${escapeHtml(item.name)}</strong><small>${itemPrice(item)} × ${item.quantity}</small></div>
       <div class="cart-actions">
         <button type="button" data-action="decrease" data-id="${escapeHtml(item.id)}" aria-label="Giảm ${escapeHtml(item.name)}">−</button>
         <span>${item.quantity}</span>
