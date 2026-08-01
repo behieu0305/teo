@@ -31,23 +31,25 @@ describe('frontend assets', () => {
     expect(csp).toContain('https://fonts.gstatic.com');
   });
 
-  it('does not reuse the same image URL for different dishes', () => {
+  it('contains all 58 supplied menu items with unique local image URLs', () => {
+    expect(menuCatalog).toHaveLength(58);
     const urls = menuCatalog.map((item) => item.imageUrl);
     expect(new Set(urls).size).toBe(urls.length);
+    expect(urls.every((url) => /^\/images\/menu\/\d{2}-[a-z0-9-]+\.webp$/.test(url))).toBe(true);
   });
 
-  it('removes the known false image mappings', () => {
-    const falseMappings = new Set([
-      '/images/menu/bo-kho.webp',
-      '/images/menu/com-ga.webp',
-      '/images/menu/banh-mi-thit-nuong.webp',
-      '/images/menu/bun-thit-nuong.webp',
-      '/images/menu/mi-xao-bo.webp',
-      '/images/menu/khoai-tay-chien.webp',
-      '/images/menu/tra-tac.webp',
-      '/images/menu/ca-phe-sua.webp',
-      '/images/menu/sinh-to-xoai.webp'
-    ]);
-    expect(menuCatalog.some((item) => falseMappings.has(item.imageUrl))).toBe(false);
+  it('serves menu images as cacheable WebP files', async () => {
+    const response = await request(createTestApp()).get(menuCatalog[0].imageUrl);
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toContain('image/webp');
+    expect(response.headers['cache-control']).toContain('immutable');
+    expect(response.body.subarray(0, 4).toString('ascii')).toBe('RIFF');
+    expect(response.body.subarray(8, 12).toString('ascii')).toBe('WEBP');
+  });
+
+  it('provides a local fallback image', async () => {
+    const response = await request(createTestApp()).get('/images/menu/fallback.svg');
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toContain('image/svg+xml');
   });
 });
