@@ -34,14 +34,16 @@ export function formatOrderForManager(order) {
     `Telegram ID: <code>${order.telegramUserId}</code>`,
     `SĐT: ${escapeHtml(order.customer.phone)}`,
     `Địa chỉ: ${escapeHtml(order.customer.address)}`,
-    order.customer.note ? `Ghi chú: ${escapeHtml(order.customer.note)}` : '',
+    order.customer.note ? `Ghi chú: ${escapeHtml(order.customer.note)}` : null,
     '',
     `<b>Món đã đặt</b>`,
     itemLines,
     '',
     `<b>Tổng cộng: ${money.format(order.total)}</b>`
   ]
-    .filter((line) => line !== '')
+    // Only drop the optional lines. Filtering on '' would also strip the blank
+    // separators above and collapse the message into one unreadable block.
+    .filter((line) => line !== null)
     .join('\n');
 }
 

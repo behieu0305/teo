@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Lower bound is what package.json allows; upper is what Railway runs.
+        node-version: ['22.x', '24.x']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fail on known vulnerabilities
+        run: npm audit --audit-level=high
+
+  startup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # A config or import error only shows up at boot, which on Railway means
+      # a failed healthcheck rather than a failed build. Catch it here instead.
+      - name: Boot the server and probe /health
+        env:
+          NODE_ENV: production
+          PORT: '3000'
+          PUBLIC_BASE_URL: https://ci.example.test
+          MINI_APP_URL: https://ci.example.test
+          TELEGRAM_BOT_TOKEN: '123456789:abcdefghijklmnopqrstuvwxyzABCDE'
+          TELEGRAM_MANAGER_IDS: '123456789'
+          TELEGRAM_WEBHOOK_SECRET: ci_secret_at_least_16_chars
+          MONGODB_URI: mongodb://127.0.0.1:27017/ci
+          ALLOW_DEV_TELEGRAM_BYPASS: 'false'
+          AUTO_SET_WEBHOOK: 'false'
+          ORDERS_ENABLED: 'false'
+        run: |
+          node src/server.js &
+          server_pid=$!
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/health > /dev/null; then
+              echo "Health check passed"
+              kill "$server_pid"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become reachable in time"
+          kill "$server_pid" 2>/dev/null || true
+          exit 1

@@ -264,6 +264,17 @@ function showSuccess(orderId) {
   window.setTimeout(() => { nodes.successToast.hidden = true; }, 5200);
 }
 
+// Kept for the whole lifetime of one order attempt so a retry after a dropped
+// response reuses the key and the server returns the original order instead of
+// creating a duplicate. Cleared only once an order is actually accepted.
+let pendingIdempotencyKey = null;
+
+function idempotencyKey() {
+  pendingIdempotencyKey ??= (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    .replaceAll('.', '-');
+  return pendingIdempotencyKey;
+}
+
 async function submitOrder() {
   nodes.feedback.textContent = '';
   if (!validateForm(true) || state.cart.size === 0 || !state.orderingEnabled) {
@@ -280,6 +291,9 @@ async function submitOrder() {
     }
   };
 
+  // Outside Telegram there is no initData to sign the request with. The server
+  // only honours this when ALLOW_DEV_TELEGRAM_BYPASS is on and it is not
+  // production, so in production this simply yields a clear 401.
   if (!tg?.initData) {
     body.devTelegramUser = { id: 999001, username: 'dev_customer', first_name: 'Khách thử nghiệm' };
   }
@@ -292,13 +306,15 @@ async function submitOrder() {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
+        'idempotency-key': idempotencyKey(),
         ...(tg?.initData ? { 'x-telegram-init-data': tg.initData } : {})
       },
       body: JSON.stringify(body)
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Không thể gửi đơn hàng');
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Không thể gửi đơn hàng. Vui lòng thử lại.');
 
+    pendingIdempotencyKey = null;
     state.cart.clear();
     nodes.phone.value = '';
     nodes.address.value = '';

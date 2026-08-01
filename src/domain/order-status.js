@@ -18,9 +18,25 @@ export function canTransition(from, to) {
   return allowedTransitions[from]?.includes(to) ?? false;
 }
 
+// Every status that may legally precede `to`. Lets the repository express the
+// guard as a single conditional update instead of a read-then-write race.
+export function previousStatesFor(to) {
+  return Object.keys(allowedTransitions).filter((from) => canTransition(from, to));
+}
+
+export class InvalidTransitionError extends Error {
+  constructor(from, to) {
+    super(`Invalid order transition: ${from} -> ${to}`);
+    this.name = 'InvalidTransitionError';
+    this.code = 'INVALID_TRANSITION';
+    this.from = from;
+    this.to = to;
+  }
+}
+
 export function assertTransition(from, to) {
   if (!canTransition(from, to)) {
-    throw new Error(`Invalid order transition: ${from} -> ${to}`);
+    throw new InvalidTransitionError(from, to);
   }
 }
 
