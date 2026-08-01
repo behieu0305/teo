@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="Chưa có ảnh món">
+  <rect width="160" height="120" fill="#f7e6c8" />
+  <g fill="none" stroke="#a26c50" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.62">
+    <path d="M44 62h72a36 36 0 0 1-36 30 36 36 0 0 1-36-30Z" />
+    <path d="M36 62h88" />
+    <path d="M62 48c0-7 5-8 5-14M80 44c0-7 5-8 5-14M98 48c0-7 5-8 5-14" opacity="0.8" />
+  </g>
+</svg>

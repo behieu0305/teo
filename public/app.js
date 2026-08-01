@@ -99,10 +99,22 @@ function quantityMarkup(item, compact = false) {
     </div>`;
 }
 
+const IMAGE_PLACEHOLDER = '/images/menu-placeholder.svg';
+
+// A dish with no photo renders the placeholder, and a photo that fails to load
+// swaps to it too. Showing the wrong dish is worse than showing none, so the
+// menu must stay presentable while real photography is still missing.
+function dishImage(item, extraClass = '') {
+  const src = item.imageUrl ? escapeHtml(item.imageUrl) : IMAGE_PLACEHOLDER;
+  const cls = [extraClass, item.imageUrl ? '' : 'is-placeholder'].filter(Boolean).join(' ');
+  return `<img src="${src}"${cls ? ` class="${cls}"` : ''} alt="${escapeHtml(item.name)}" loading="lazy"
+    onerror="this.onerror=null;this.src='${IMAGE_PLACEHOLDER}';this.classList.add('is-placeholder')" />`;
+}
+
 function featureCard(item) {
   return `
     <article class="feature-card">
-      <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" loading="lazy" />
+      ${dishImage(item)}
       ${item.badge ? `<span class="badge">${escapeHtml(item.badge)}</span>` : ''}
       <div class="feature-content">
         <div class="feature-top"><h4>${escapeHtml(item.name)}</h4><span class="price">${money(item.price)}</span></div>
@@ -116,7 +128,7 @@ function menuCard(item) {
   return `
     <article class="menu-card">
       <div class="menu-card-image">
-        <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" loading="lazy" />
+        ${dishImage(item)}
         ${item.badge ? `<span class="badge">${escapeHtml(item.badge)}</span>` : ''}
       </div>
       <div class="menu-card-content">
@@ -183,7 +195,7 @@ function renderCart() {
   nodes.cartEmpty.hidden = items.length > 0;
   nodes.cart.innerHTML = items.map((item) => `
     <div class="cart-row">
-      <img src="${escapeHtml(item.imageUrl)}" alt="" />
+      ${dishImage({ ...item, name: '' })}
       <div class="cart-row-info"><strong>${escapeHtml(item.name)}</strong><small>${money(item.price)} × ${item.quantity}</small></div>
       <div class="cart-actions">
         <button type="button" data-action="decrease" data-id="${escapeHtml(item.id)}" aria-label="Giảm ${escapeHtml(item.name)}">−</button>
