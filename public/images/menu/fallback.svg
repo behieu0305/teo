@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Ảnh món ăn đang cập nhật">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7a3427"/>
+      <stop offset="1" stop-color="#4f241c"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="400" cy="250" r="120" fill="#ffffff" fill-opacity=".08" stroke="#f4ce7d" stroke-width="4"/>
+  <circle cx="400" cy="250" r="85" fill="none" stroke="#f8e4b0" stroke-width="8"/>
+  <path d="M355 245c18 20 35 30 45 30 11 0 25-10 45-30" fill="none" stroke="#f8e4b0" stroke-width="8" stroke-linecap="round"/>
+  <text x="400" y="430" text-anchor="middle" fill="#fff7eb" font-family="Arial, sans-serif" font-size="34" font-weight="700">Ảnh món đang cập nhật</text>
+  <text x="400" y="470" text-anchor="middle" fill="#f4ce7d" font-family="Arial, sans-serif" font-size="18" font-weight="600" letter-spacing="3">SAIGON STREET FOOD</text>
+</svg>
