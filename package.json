@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "set-webhook": "node scripts/set-webhook.js"
+    "set-webhook": "node scripts/set-webhook.js",
+    "menu:photos": "node scripts/menu-photos.js"
   },
   "engines": {
     "node": ">=22"
