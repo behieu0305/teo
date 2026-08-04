@@ -11,10 +11,10 @@ const actionToStatus = Object.freeze({
 });
 
 const customerMessages = Object.freeze({
-  [ORDER_STATUS.PREPARING]: 'Đơn hàng của bạn đã được quán xác nhận và đang chuẩn bị.',
-  [ORDER_STATUS.SHIPPING]: 'Đơn hàng của bạn đang được giao.',
-  [ORDER_STATUS.COMPLETED]: 'Đơn hàng đã hoàn thành. Cảm ơn bạn đã đặt món!',
-  [ORDER_STATUS.CANCELED]: 'Đơn hàng đã bị hủy. Vui lòng liên hệ quán nếu cần hỗ trợ.'
+  [ORDER_STATUS.PREPARING]: 'Đơn hàng của bạn đã được quán xác nhận và đang chuẩn bị. 👨‍🍳',
+  [ORDER_STATUS.SHIPPING]: 'Đơn hàng của bạn đang được giao. 🛵',
+  [ORDER_STATUS.COMPLETED]: 'Đơn hàng đã hoàn thành ☑️. Cảm ơn bạn đã đặt món! 💓',
+  [ORDER_STATUS.CANCELED]: 'Đơn hàng đã bị hủy ❌. Vui lòng liên hệ quán nếu cần hỗ trợ.'
 });
 
 export function createTelegramBot({
