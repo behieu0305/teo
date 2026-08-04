@@ -16,10 +16,14 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MENU_DIR = path.join(ROOT, 'public', 'images', 'menu');
 const MANIFEST = path.join(ROOT, 'src', 'domain', 'menu-images.js');
 
-// Thẻ món dùng object-fit: cover, thẻ "món nổi bật" là 16/9. Cắt sẵn về 16/9
-// để trình duyệt không phải cắt thêm lần nữa ở chỗ hẹp.
-const WIDTH = 800;
-const HEIGHT = 450;
+// Khung ảnh thật khi render, đo bằng trình duyệt ở nhiều bề ngang màn hình:
+//   lưới món   320–390px:  98×108  (0.91)   430px trở lên: 112×112 → 118×118 (1.0)
+//   giỏ hàng             :  64×58  (1.10)
+//   thẻ nổi bật          :  16/9   — hiện không món nào featured nên chưa dùng
+// Tất cả đều object-fit: cover. Ô gần vuông, nên ảnh vuông là vừa khít; ảnh
+// 16:9 nhét vào ô vuông sẽ bị cắt mất gần một nửa bề ngang.
+const WIDTH = 900;
+const HEIGHT = 900;
 const QUALITY = 82;
 const SOURCE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.avif']);
 

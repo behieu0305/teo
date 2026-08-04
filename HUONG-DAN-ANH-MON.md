@@ -10,8 +10,8 @@ Hiện cả 58 món đều hiện ảnh mặc định. Làm theo 3 bước dư�
 
 | Hạng mục | Mức cần | Vì sao |
 |---|---|---|
-| Kích thước | tối thiểu **1600 × 900 px** | Công cụ sẽ thu nhỏ về 800×450. Ảnh nhỏ hơn phóng lên sẽ vỡ. |
-| Tỉ lệ | ngang, gần **16:9** | Thẻ món cắt theo tỉ lệ này. Ảnh vuông hoặc dọc sẽ bị cắt mất trên dưới. |
+| Tỉ lệ | **1:1 — vuông** | Đã đo khung ảnh thật trên trình duyệt: ô hiển thị là 98×108 trên máy 320–390px và 112×112 → 118×118 từ 430px trở lên. Gần vuông. |
+| Kích thước | tối thiểu **1200 × 1200 px** | Công cụ thu về 900×900. Ảnh nhỏ hơn phóng lên sẽ vỡ. |
 | Định dạng | JPG, PNG, HEIC, WebP | Công cụ tự đổi sang WebP. |
 | Bố cục | món **nằm giữa khung** | Ảnh bị cắt hai bên khi màn hình hẹp. Để món giữa thì cắt kiểu nào cũng còn nguyên. |
 
@@ -19,7 +19,7 @@ Hiện cả 58 món đều hiện ảnh mặc định. Làm theo 3 bước dư�
 
 - Chụp từ trên xuống hoặc chếch 45°, ánh sáng tự nhiên gần cửa sổ.
 - Nền đơn giản: mặt bàn gỗ, khay, giấy trơn.
-- Chụp ngang máy. Ảnh dọc sẽ mất phần trên và dưới.
+- Món chiếm khoảng **80% khung**, chừa lề đều bốn phía. Ô hiển thị đổi từ hơi dọc sang vuông tuỳ bề ngang máy, để lề thì cắt kiểu nào món vẫn nguyên.
 
 **Tránh**
 
@@ -161,7 +161,7 @@ npm run menu:photos -- ./anh-mon
 Lệnh này sẽ:
 
 1. Xoay ảnh đúng chiều theo dữ liệu EXIF (ảnh chụp bằng điện thoại hay bị nằm ngang nếu bỏ qua bước này).
-2. Cắt về 800 × 450, tự chọn vùng có món thay vì cắt giữa một cách máy móc.
+2. Cắt về 900 × 900 (vuông), tự chọn vùng có món thay vì cắt giữa một cách máy móc.
 3. Đổi sang WebP chất lượng 82 — thường còn 40–70 KB mỗi ảnh.
 4. Lưu vào `public/images/menu/`.
 5. Sinh lại `src/domain/menu-images.js` để menu biết món nào đã có ảnh.
@@ -170,7 +170,7 @@ Lệnh này sẽ:
 Kết quả trông như sau:
 
 ```
-Đang xử lý ảnh trong ./anh-mon → 800×450 WebP
+Đang xử lý ảnh trong ./anh-mon → 900×900 WebP
 
   ✓ bun-bo                         52 KB   Bún bò
   ✓ pho-bo                         48 KB   Phở bò
@@ -235,3 +235,43 @@ Vì làm tay thì dễ trỏ tới file không tồn tại. Danh sách ảnh đ�
 ## Ảnh cũ đã bị gỡ
 
 12 file trong `public/images/menu/` trước đây đã bị xoá khỏi repo. Kiểm tra cho thấy 12 file đó thực chất chỉ là **11 ảnh gốc**, trong đó `banh-mi-thit-nuong.webp` và `goi-cuon.webp` giống hệt nhau từng byte. Giữ lại thì công cụ sẽ tự gắn chúng vào menu và khách lại thấy ảnh sai món.
+
+---
+
+## Nếu dùng AI sinh ảnh (Gemini, ChatGPT…)
+
+**Tỉ lệ chọn: `1:1`.** Gemini hỗ trợ sẵn tỉ lệ này. Xuất ở kích thước lớn nhất có thể, tối thiểu 1200×1200.
+
+Mẫu prompt — thay phần trong ngoặc rồi dùng lại cho từng món:
+
+```
+A top-down photo of [TÊN MÓN TIẾNG ANH], authentic Vietnamese street food,
+served in a simple white bowl on a warm wooden table.
+Natural window light, soft shadows, appetising and freshly made.
+Square 1:1 composition, dish centred and filling about 80% of the frame,
+even margin on all four sides.
+Photorealistic food photography, sharp focus, no text, no watermark,
+no logo, no hands, no cutlery outside the frame.
+```
+
+Câu **"no text, no watermark, no logo"** là bắt buộc. Ảnh cũ của quán bị in cứng chữ "BÁN CHẠY" vào pixel — giá và nhãn đã hiển thị riêng bằng HTML, in vào ảnh là sai ngay khi đổi giá.
+
+Câu **"dish centred and filling about 80% of the frame"** cũng quan trọng: ô hiển thị đổi từ hơi dọc (98×108) sang vuông (118×118) tuỳ bề ngang máy, có lề thì cắt kiểu nào món vẫn nguyên.
+
+### Tên tiếng Anh gợi ý cho vài món khó
+
+| Mã món | Mô tả cho AI |
+|---|---|
+| `pho-bo` | Vietnamese beef noodle soup pho, rice noodles, sliced beef, herbs |
+| `bun-bo` | Bun bo Hue, spicy beef noodle soup, thick round rice noodles |
+| `canh-bun` | Canh bun, crab paste noodle soup with water spinach |
+| `banh-mi-heo-quay` | Vietnamese baguette sandwich with roast pork belly, pickled carrot, cilantro |
+| `com-tam-trung` | Broken rice with fried egg and grilled pork |
+| `goi-cuon` | Fresh Vietnamese spring rolls in rice paper, shrimp and herbs |
+| `ca-phe-sua-da` | Vietnamese iced coffee with condensed milk in a clear glass |
+
+### Lưu ý khi dùng ảnh AI
+
+- **Kiểm tra từng ảnh trước khi dùng.** AI hay dựng sai món Việt: phở ra thành ramen, bánh mì ra thành sandwich kẹp. Sai món còn tệ hơn không có ảnh.
+- Ảnh AI không phải món thật của quán. Khách nhận đồ khác ảnh có thể phàn nàn. Cân nhắc chụp ảnh thật cho các món bán chạy nhất, ảnh AI chỉ để lấp chỗ trống.
+- Mỗi món một ảnh riêng. Công cụ sẽ dừng nếu phát hiện hai món trùng ảnh y hệt.
