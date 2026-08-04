@@ -45,6 +45,13 @@ async function configureWebhookOnce() {
   webhookConfigured = true;
 }
 
+// The bot only needs MongoDB to persist orders. /start, the Mini App button and
+// webhook delivery must keep working while the database is still unreachable, so
+// webhook registration is deliberately NOT chained to the MongoDB connection.
+configureWebhookOnce().catch((error) => {
+  console.error('Telegram webhook could not be configured automatically:', error.message);
+});
+
 async function connectMongoUntilReady(uri) {
   let attempt = 0;
 
@@ -57,13 +64,6 @@ async function connectMongoUntilReady(uri) {
         connectTimeoutMS: 10_000
       });
       console.log('MongoDB connected');
-
-      try {
-        await configureWebhookOnce();
-      } catch (error) {
-        console.error('Telegram webhook could not be configured automatically:', error.message);
-      }
-
       return;
     } catch (error) {
       const delayMs = Math.min(30_000, 2_000 * attempt);
