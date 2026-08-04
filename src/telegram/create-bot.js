@@ -1,5 +1,5 @@
 import { Markup, Telegraf } from 'telegraf';
-import { ORDER_STATUS, statusLabel } from '../domain/order-status.js';
+import { ORDER_STATUS, statusIcon, statusLabel } from '../domain/order-status.js';
 import { formatOrderForManager, managerKeyboard } from '../services/order-message.js';
 import { logger } from '../utils/logger.js';
 
@@ -78,7 +78,9 @@ export function createTelegramBot({
     // The status change already succeeded. Everything below is best effort, so
     // each step is isolated: a customer who blocked the bot must not make the
     // manager see a failure for an update that actually went through.
-    await ctx.answerCbQuery(`Đã chuyển sang: ${statusLabel(updated.status)}`);
+    await ctx.answerCbQuery(
+      `Đã chuyển sang: ${statusIcon(updated.status)} ${statusLabel(updated.status)}`
+    );
 
     try {
       await ctx.editMessageText(formatOrderForManager(updated), {

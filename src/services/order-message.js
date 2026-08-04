@@ -1,5 +1,10 @@
 import { Markup } from 'telegraf';
-import { statusLabel, ORDER_STATUS } from '../domain/order-status.js';
+import {
+  statusHeadline,
+  statusIcon,
+  statusLabel,
+  ORDER_STATUS
+} from '../domain/order-status.js';
 
 const number = new Intl.NumberFormat('en-LK', { maximumFractionDigits: 0 });
 const money = { format: (value) => `Rs ${number.format(value)}` };
@@ -60,7 +65,7 @@ export function formatOrderForManager(order) {
   const placedAt = formatOrderTime(order.createdAt);
 
   return [
-    `🔔 <b>ĐƠN HÀNG MỚI</b>`,
+    `${statusIcon(order.status)} <b>${statusHeadline(order.status)}</b>`,
     `🔖 Mã: <code>${escapeHtml(order.id)}</code>`,
     placedAt ? `⏱ Thời gian đặt: ${placedAt}` : null,
     `♻️ Trạng thái: <b>${statusLabel(order.status)}</b>`,

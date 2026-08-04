@@ -21,6 +21,23 @@ function buildOrder(overrides = {}) {
 }
 
 describe('formatOrderForManager', () => {
+  // The manager's message is edited in place, so a stale headline would leave a
+  // finished order still shouting "ĐƠN HÀNG MỚI" in the chat.
+  it.each([
+    [ORDER_STATUS.PENDING, '🔔 <b>ĐƠN HÀNG MỚI</b>'],
+    [ORDER_STATUS.PREPARING, '👨‍🍳 <b>ĐƠN ĐANG CHUẨN BỊ</b>'],
+    [ORDER_STATUS.SHIPPING, '🛵 <b>ĐƠN ĐANG GIAO</b>'],
+    [ORDER_STATUS.COMPLETED, '✅ <b>ĐƠN ĐÃ HOÀN THÀNH</b>'],
+    [ORDER_STATUS.CANCELED, '❌ <b>ĐƠN ĐÃ HỦY</b>']
+  ])('headlines a %s order with its own icon and title', (status, expected) => {
+    const message = formatOrderForManager(buildOrder({ status }));
+
+    expect(message.startsWith(expected)).toBe(true);
+    if (status !== ORDER_STATUS.PENDING) {
+      expect(message).not.toContain('ĐƠN HÀNG MỚI');
+    }
+  });
+
   it('stamps the order time in the shop timezone, not the container UTC clock', () => {
     const message = formatOrderForManager(buildOrder());
 

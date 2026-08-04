@@ -49,3 +49,26 @@ export function statusLabel(status) {
     [ORDER_STATUS.CANCELED]: 'Đã hủy'
   }[status] ?? status;
 }
+
+export function statusIcon(status) {
+  return {
+    [ORDER_STATUS.PENDING]: '🔔',
+    [ORDER_STATUS.PREPARING]: '👨‍🍳',
+    [ORDER_STATUS.SHIPPING]: '🛵',
+    [ORDER_STATUS.COMPLETED]: '✅',
+    [ORDER_STATUS.CANCELED]: '❌'
+  }[status] ?? '📦';
+}
+
+// The manager's message is edited in place as the order moves, so the headline
+// has to move with it. Leaving it on "ĐƠN HÀNG MỚI" made a finished order look
+// like one still waiting to be picked up.
+export function statusHeadline(status) {
+  return {
+    [ORDER_STATUS.PENDING]: 'ĐƠN HÀNG MỚI',
+    [ORDER_STATUS.PREPARING]: 'ĐƠN ĐANG CHUẨN BỊ',
+    [ORDER_STATUS.SHIPPING]: 'ĐƠN ĐANG GIAO',
+    [ORDER_STATUS.COMPLETED]: 'ĐƠN ĐÃ HOÀN THÀNH',
+    [ORDER_STATUS.CANCELED]: 'ĐƠN ĐÃ HỦY'
+  }[status] ?? 'ĐƠN HÀNG';
+}
