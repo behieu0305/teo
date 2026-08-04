@@ -63,6 +63,52 @@ function normalize(value) {
     .trim();
 }
 
+function renderShopStatus() {
+  const badge = document.querySelector('#status-open');
+  const text = document.querySelector('#status-open-text');
+  const hours = document.querySelector('#status-hours');
+  if (!badge || !text) return;
+
+  const { opensAt, closesAt, timezone, openingHours } = state.config;
+  if (openingHours && hours) hours.textContent = openingHours;
+
+  const open = window.ShopHours.isShopOpen({
+    opensAt,
+    closesAt,
+    nowMinutes: timezone ? window.ShopHours.shopMinutesNow(timezone) : null
+  });
+
+  // Unknown hours must not claim the shop is open — say nothing instead.
+  if (open === null) {
+    badge.hidden = true;
+    return;
+  }
+  badge.hidden = false;
+  badge.classList.toggle('is-closed', !open);
+  text.textContent = open ? 'Đang mở cửa' : 'Ngoài giờ mở cửa';
+}
+
+function renderBotLink() {
+  const link = document.querySelector('#bot-link');
+  if (!link) return;
+  const username = state.config.botUsername;
+  if (!username) {
+    link.hidden = true;
+    return;
+  }
+  const url = `https://t.me/${username}`;
+  link.href = url;
+  link.hidden = false;
+  link.addEventListener('click', (event) => {
+    // target="_blank" is a dead end inside the Telegram WebView; the SDK has to
+    // hand the link back to the client instead.
+    if (tg?.openTelegramLink) {
+      event.preventDefault();
+      tg.openTelegramLink(url);
+    }
+  });
+}
+
 function renderTelegramUser() {
   const user = tg?.initDataUnsafe?.user;
   document.querySelector('#telegram-user').textContent = user
@@ -443,6 +489,8 @@ async function init() {
 
     state.config = { ...state.config, ...(await configResponse.json()) };
     state.orderingEnabled = Boolean(state.config.orderingEnabled);
+    renderShopStatus();
+    renderBotLink();
     const menu = await menuResponse.json();
     // Older deploys returned a bare array; accept both so a cached
     // Mini App shell does not break against a newer server.

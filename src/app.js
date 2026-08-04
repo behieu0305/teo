@@ -13,6 +13,12 @@ const PUBLIC_DIR = path.join(import.meta.dirname, '..', 'public');
 // on mobile, which makes the breakage easy to miss.
 const TELEGRAM_FRAME_ANCESTORS = ['https://web.telegram.org', 'https://*.telegram.org'];
 
+// The shop is in Colombo; Railway containers run on UTC. Keeping the zone next
+// to the hours means the open/closed badge is judged by the shop's clock.
+const SHOP_TIMEZONE = 'Asia/Colombo';
+const SHOP_OPENS_AT = '07:00';
+const SHOP_CLOSES_AT = '17:00';
+
 export function createApp({ orderRepository, bot, config, isDatabaseReady = () => true }) {
   const app = express();
 
@@ -83,13 +89,37 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
     });
   });
 
-  app.get('/api/config', (_req, res) => {
+  // The page used to hardcode t.me/saigonstreetfood_bot, which is a dead link
+  // the moment the real bot has a different username. Ask Telegram once and
+  // cache; if the call fails the client simply hides the link.
+  let botUsername = null;
+  let botUsernameResolved = false;
+  async function resolveBotUsername() {
+    if (botUsernameResolved) return botUsername;
+    botUsernameResolved = true;
+    try {
+      botUsername = (await bot.telegram?.getMe?.())?.username ?? null;
+    } catch (error) {
+      logger.warn('bot_username_unavailable', { error: error.message });
+    }
+    return botUsername;
+  }
+
+  app.get('/api/config', async (_req, res) => {
     res.json({
+      botUsername: await resolveBotUsername(),
       orderingEnabled: config.ORDERS_ENABLED,
       currencyLabel: 'Rs',
       shopName: 'Saigon Street Food',
       location: 'Colombo',
-      openingHours: '07:00 AM – 05:00 PM'
+      openingHours: '07:00 AM – 05:00 PM',
+      // Machine-readable twins of openingHours. The badge used to be hardcoded
+      // to "Đang mở cửa", so a customer opening the app at midnight was told the
+      // shop was open. The client needs the zone too: it must judge by the
+      // shop's clock, not by whatever timezone the customer's phone is in.
+      opensAt: SHOP_OPENS_AT,
+      closesAt: SHOP_CLOSES_AT,
+      timezone: SHOP_TIMEZONE
     });
   });
   app.get('/api/menu', (_req, res) => {
