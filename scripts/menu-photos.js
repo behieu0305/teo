@@ -22,9 +22,12 @@ const MANIFEST = path.join(ROOT, 'src', 'domain', 'menu-images.js');
 //   thẻ nổi bật          :  16/9   — hiện không món nào featured nên chưa dùng
 // Tất cả đều object-fit: cover. Ô gần vuông, nên ảnh vuông là vừa khít; ảnh
 // 16:9 nhét vào ô vuông sẽ bị cắt mất gần một nửa bề ngang.
-const WIDTH = 900;
-const HEIGHT = 900;
-const QUALITY = 82;
+// Ô lớn nhất là 118 CSS px, màn hình 3x cần 354 px thật. 500 px là đủ dư mà
+// vẫn nhẹ: ảnh món thật ra ~42 KB, cả 58 món khoảng 2,4 MB. Xuất 900 px chỉ
+// nặng gấp đôi (5,7 MB) mà mắt thường không thấy khác.
+const WIDTH = 500;
+const HEIGHT = 500;
+const QUALITY = 80;
 const SOURCE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.avif']);
 
 const ids = new Set(menuCatalog.map((i) => i.id));

@@ -11,7 +11,7 @@ Hiện cả 58 món đều hiện ảnh mặc định. Làm theo 3 bước dư�
 | Hạng mục | Mức cần | Vì sao |
 |---|---|---|
 | Tỉ lệ | **1:1 — vuông** | Đã đo khung ảnh thật trên trình duyệt: ô hiển thị là 98×108 trên máy 320–390px và 112×112 → 118×118 từ 430px trở lên. Gần vuông. |
-| Kích thước | tối thiểu **1200 × 1200 px** | Công cụ thu về 900×900. Ảnh nhỏ hơn phóng lên sẽ vỡ. |
+| Kích thước | tối thiểu **1000 × 1000 px** | Công cụ thu về 500×500 — ô hiển thị lớn nhất là 118 CSS px, màn 3x cần 354 px thật nên 500 là đủ dư. |
 | Định dạng | JPG, PNG, HEIC, WebP | Công cụ tự đổi sang WebP. |
 | Bố cục | món **nằm giữa khung** | Ảnh bị cắt hai bên khi màn hình hẹp. Để món giữa thì cắt kiểu nào cũng còn nguyên. |
 
@@ -161,8 +161,8 @@ npm run menu:photos -- ./anh-mon
 Lệnh này sẽ:
 
 1. Xoay ảnh đúng chiều theo dữ liệu EXIF (ảnh chụp bằng điện thoại hay bị nằm ngang nếu bỏ qua bước này).
-2. Cắt về 900 × 900 (vuông), tự chọn vùng có món thay vì cắt giữa một cách máy móc.
-3. Đổi sang WebP chất lượng 82 — thường còn 40–70 KB mỗi ảnh.
+2. Cắt về 500 × 500 (vuông), tự chọn vùng có món thay vì cắt giữa một cách máy móc.
+3. Đổi sang WebP chất lượng 80 — ảnh món thật khoảng 42 KB, cả 58 món ~2,4 MB.
 4. Lưu vào `public/images/menu/`.
 5. Sinh lại `src/domain/menu-images.js` để menu biết món nào đã có ảnh.
 6. In ra danh sách món còn thiếu.
@@ -170,10 +170,10 @@ Lệnh này sẽ:
 Kết quả trông như sau:
 
 ```
-Đang xử lý ảnh trong ./anh-mon → 900×900 WebP
+Đang xử lý ảnh trong ./anh-mon → 500×500 WebP
 
-  ✓ bun-bo                         52 KB   Bún bò
-  ✓ pho-bo                         48 KB   Phở bò
+  ✓ bun-bo                         41 KB   Bún bò
+  ✓ pho-bo                         44 KB   Phở bò
 
 Đã xử lý 2 ảnh.
 
@@ -240,7 +240,9 @@ Vì làm tay thì dễ trỏ tới file không tồn tại. Danh sách ảnh đ�
 
 ## Nếu dùng AI sinh ảnh (Gemini, ChatGPT…)
 
-**Tỉ lệ chọn: `1:1`.** Gemini hỗ trợ sẵn tỉ lệ này. Xuất ở kích thước lớn nhất có thể, tối thiểu 1200×1200.
+**Tỉ lệ chọn: `1:1`.** Gemini hỗ trợ sẵn tỉ lệ này. Xuất ở kích thước lớn nhất có thể, tối thiểu 1000×1000.
+
+⚠️ **Dùng [aistudio.google.com](https://aistudio.google.com), đừng dùng app Gemini thường.** App Gemini đóng một dấu ✦ lấp lánh vào góc dưới phải ảnh — nhìn thấy rõ, và nó sẽ nằm luôn trên menu của quán. Tài liệu Gemini API ghi rõ ảnh sinh qua API chỉ mang SynthID vô hình, không có dấu nhìn thấy được.
 
 Mẫu prompt — thay phần trong ngoặc rồi dùng lại cho từng món:
 
