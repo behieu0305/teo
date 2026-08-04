@@ -53,6 +53,19 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
     })
   );
 
+  // Every accepted order fans out a Telegram message to every manager, so this
+  // endpoint gets a much tighter per-IP budget than menu browsing does.
+  app.use(
+    '/api/orders',
+    rateLimit({
+      windowMs: 60_000,
+      limit: 10,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Bạn gửi đơn quá nhanh. Vui lòng thử lại sau một phút.' }
+    })
+  );
+
   // Liveness: Railway only needs the web process to be reachable.
   app.get('/health', (_req, res) => {
     res.status(200).json({
