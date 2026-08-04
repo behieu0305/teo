@@ -17,7 +17,10 @@ const schema = z.object({
   MONGODB_URI: z.string().min(1),
   ALLOW_DEV_TELEGRAM_BYPASS: booleanFromString,
   AUTO_SET_WEBHOOK: booleanFromString.default('true'),
-  ORDERS_ENABLED: booleanFromString.default('false')
+  ORDERS_ENABLED: booleanFromString.default('false'),
+  // An initData string stays replayable for its whole lifetime, so keep the
+  // window short enough that a leaked one cannot be used to place orders.
+  INIT_DATA_MAX_AGE_SECONDS: z.coerce.number().int().positive().max(3600).default(600)
 });
 
 function railwayPublicUrl(raw) {
@@ -44,9 +47,17 @@ export function loadConfig(overrides = {}) {
     throw new Error(`Invalid environment configuration: ${details}`);
   }
 
-  const managerIds = parsed.data.TELEGRAM_MANAGER_IDS.split(',')
-    .map((value) => Number(value.trim()))
-    .filter(Number.isSafeInteger);
+  // Number('') is 0 and passes Number.isSafeInteger, so blanks from a trailing
+  // comma have to be dropped before the conversion or they become manager 0.
+  const managerIds = [
+    ...new Set(
+      parsed.data.TELEGRAM_MANAGER_IDS.split(',')
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .map(Number)
+        .filter((value) => Number.isSafeInteger(value) && value > 0)
+    )
+  ];
 
   if (managerIds.length === 0) {
     throw new Error('Invalid environment configuration: TELEGRAM_MANAGER_IDS must contain at least one numeric Telegram ID');

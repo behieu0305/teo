@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger.js';
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -19,12 +21,12 @@ export async function configureTelegramWebhook({ bot, config, attempts = 6 }) {
         throw new Error(`Telegram returned an unexpected webhook URL: ${info.url || '(empty)'}`);
       }
 
-      console.log(`Telegram webhook ready: ${webhookUrl}`);
+      logger.info('webhook_ready', { webhookUrl });
       return info;
     } catch (error) {
       lastError = error;
       const delayMs = Math.min(30_000, 1_500 * 2 ** (attempt - 1));
-      console.error(`Webhook setup attempt ${attempt}/${attempts} failed:`, error.message);
+      logger.warn('webhook_setup_failed', { attempt, attempts, error: error.message });
       if (attempt < attempts) await sleep(delayMs);
     }
   }

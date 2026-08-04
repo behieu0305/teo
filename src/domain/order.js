@@ -36,7 +36,7 @@ export const createOrderSchema = z.object({
     .optional()
 });
 
-export function buildOrder({ payload, telegramUser, now = new Date() }) {
+export function buildOrder({ payload, telegramUser, idempotencyKey = null, now = new Date() }) {
   const grouped = new Map();
   for (const item of payload.items) {
     grouped.set(item.menuItemId, (grouped.get(item.menuItemId) ?? 0) + item.quantity);
@@ -62,6 +62,7 @@ export function buildOrder({ payload, telegramUser, now = new Date() }) {
 
   return {
     id: crypto.randomUUID(),
+    idempotencyKey,
     telegramUserId: telegramUser.id,
     telegramUsername: telegramUser.username ?? '',
     telegramDisplayName:

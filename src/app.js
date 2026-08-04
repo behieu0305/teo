@@ -1,38 +1,33 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import express from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { menuCatalog } from './domain/menu.js';
+import { CATEGORIES, menuCatalog } from './domain/menu.js';
 import { createOrderRouter } from './routes/order-routes.js';
+import { logger, requestLogger } from './utils/logger.js';
 
-const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
+const PUBLIC_DIR = path.join(import.meta.dirname, '..', 'public');
 
-// Telegram web clients (web.telegram.org /k/ and /a/) render Mini Apps inside an
-// iframe, so the page must stay embeddable from Telegram origins.
-// See https://core.telegram.org/api/web-events
-const TELEGRAM_FRAME_ANCESTORS = [
-  "'self'",
-  'https://telegram.org',
-  'https://*.telegram.org',
-  'https://web.telegram.org',
-  'https://*.t.me'
-];
+// Telegram Web renders a Mini App inside an iframe on these origins. Without
+// them the app is a blank frame for every desktop/web user while still working
+// on mobile, which makes the breakage easy to miss.
+const TELEGRAM_FRAME_ANCESTORS = ['https://web.telegram.org', 'https://*.telegram.org'];
 
 export function createApp({ orderRepository, bot, config, isDatabaseReady = () => true }) {
   const app = express();
 
   app.disable('x-powered-by');
-  // Railway terminates TLS in front of the app. Without this, req.ip is the edge
-  // proxy address for every visitor and the rate limiter shares one bucket.
-  // A fixed hop count (not `true`) prevents X-Forwarded-For spoofing.
+  // Railway terminates TLS at its edge proxy, so without this every client
+  // shares one rate-limit bucket and express-rate-limit refuses to trust
+  // X-Forwarded-For. Use 1 (the single Railway hop), never `true`.
   app.set('trust proxy', 1);
+
+  app.use(requestLogger());
   app.use(
     helmet({
-      // X-Frame-Options cannot express an allowlist; CSP frame-ancestors below
-      // is the enforcing mechanism and would be contradicted by SAMEORIGIN.
+      // X-Frame-Options cannot express more than one allowed origin and would
+      // contradict the frame-ancestors list below, so let CSP own framing.
       frameguard: false,
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
@@ -41,7 +36,7 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:'],
           connectSrc: ["'self'"],
-          frameAncestors: TELEGRAM_FRAME_ANCESTORS
+          frameAncestors: ["'self'", ...TELEGRAM_FRAME_ANCESTORS]
         }
       }
     })
@@ -58,8 +53,8 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
     })
   );
 
-  // Order creation notifies every manager on Telegram, so it gets a tighter
-  // per-IP budget than menu browsing.
+  // Every accepted order fans out a Telegram message to every manager, so this
+  // endpoint gets a much tighter per-IP budget than menu browsing does.
   app.use(
     '/api/orders',
     rateLimit({
@@ -98,7 +93,15 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
     });
   });
   app.get('/api/menu', (_req, res) => {
-    res.json(menuCatalog.filter((item) => item.available));
+    const items = menuCatalog.filter((item) => item.available);
+    // Categories ship with the menu so the client renders them in the shop's
+    // intended order rather than in whatever order the dishes happen to arrive.
+    res.json({
+      categories: CATEGORIES.filter((category) =>
+        items.some((item) => item.category === category.id)
+      ),
+      items
+    });
   });
   app.use(
     '/api/orders',
@@ -110,17 +113,33 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
       secretToken: config.TELEGRAM_WEBHOOK_SECRET
     })
   );
-  // Absolute path: a relative one silently breaks whenever the process is
-  // started from a directory other than the repository root.
-  app.use(express.static(publicDir));
+  app.use(express.static(PUBLIC_DIR));
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'API route not found' });
   });
 
-  app.use((error, _req, res, _next) => {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+  app.use((error, req, res, _next) => {
+    // body-parser reports malformed JSON as a 400 on the error object. Passing
+    // that through keeps a client-side mistake from being counted as a server
+    // fault by both the caller and our own alerting.
+    const status = Number(error.status ?? error.statusCode);
+    if (Number.isInteger(status) && status >= 400 && status < 500) {
+      logger.warn('client_error', { requestId: req.id, status, error: error.message });
+      return res.status(status).json({
+        error:
+          error.type === 'entity.parse.failed'
+            ? 'Dữ liệu gửi lên không phải JSON hợp lệ.'
+            : 'Yêu cầu không hợp lệ.'
+      });
+    }
+
+    logger.error('unhandled_error', {
+      requestId: req.id,
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({ error: 'Internal server error' });
   });
 
   return app;

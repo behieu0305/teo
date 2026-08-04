@@ -1,63 +1,105 @@
 # Telegram Mini App Ordering — Railway Production
 
-> Bản sửa lỗi Railway: `package.json` phải nằm ở gốc repository. Đọc `RAILWAY-ERROR-GUIDE.md` trước khi deploy.
+Hệ thống đặt món qua Telegram Mini App, chạy trực tiếp trên Railway bằng
+Node.js/Railpack. Không cần Docker.
 
-
-Dự án mới độc lập, chạy trực tiếp trên Railway bằng Node.js/Railpack. Không cần Docker Desktop và không có Dockerfile trong repository.
+> Hướng dẫn triển khai, checklist và tra lỗi: **[`docs/DEPLOY.md`](docs/DEPLOY.md)**
 
 ## Kiến trúc
 
-- Railway Web Service: Mini App, Express API và Telegram webhook.
-- Railway MongoDB Service: lưu đơn hàng qua private network.
-- Telegram Bot: `/start`, mở Mini App, gửi đơn cho quản lý và cập nhật trạng thái.
+- **Railway Web Service** — Mini App, Express API và Telegram webhook.
+- **Railway MongoDB Service** — lưu đơn hàng qua private network.
+- **Telegram Bot** — `/start`, mở Mini App, gửi đơn cho quản lý và cập nhật
+  trạng thái bằng nút bấm.
 
-## Biến môi trường của Web Service
-
-```env
-NODE_ENV=production
-TELEGRAM_BOT_TOKEN=...
-TELEGRAM_MANAGER_IDS=123456789
-TELEGRAM_WEBHOOK_SECRET=chuoi_ngau_nhien_it_nhat_16_ky_tu
-MONGODB_URI=${{MongoDB.MONGO_URL}}
-ALLOW_DEV_TELEGRAM_BYPASS=false
-AUTO_SET_WEBHOOK=true
-ORDERS_ENABLED=false
+```
+public/          Mini App (HTML/CSS/JS thuần, không build step)
+src/app.js       Lắp ráp Express: bảo mật, rate limit, route, static
+src/server.js    Khởi động HTTP, kết nối MongoDB ở nền, tắt máy êm
+src/config/      Đọc và kiểm tra biến môi trường (zod)
+src/domain/      Menu, dựng đơn, máy trạng thái đơn hàng
+src/repositories/ Lưu trữ đơn (MongoDB, và bản in-memory cho test)
+src/routes/      HTTP API
+src/services/    Định dạng tin nhắn Telegram
+src/telegram/    Bot và cấu hình webhook
+src/utils/       Xác thực Telegram initData, logging
 ```
 
-`PUBLIC_BASE_URL` và `MINI_APP_URL` có thể không cần nhập. Khi Railway đã tạo Public Domain, ứng dụng tự dùng `https://$RAILWAY_PUBLIC_DOMAIN`.
+## Chạy tại máy
 
-## Triển khai trên Railway
+```bash
+npm ci
+cp .env.example .env      # điền giá trị thật
+npm run dev
+```
 
-1. Tạo repository GitHub mới và tải toàn bộ mã nguồn này lên nhánh `main`.
-2. Railway → **New Project** → **Deploy from GitHub repo** → chọn repository mới.
-3. Trên Project Canvas, chọn **+ New** → **Database** → **MongoDB**.
-4. Mở Web Service → **Variables** → **Raw Editor** và nhập các biến ở trên.
-5. Đặt `MONGODB_URI` là reference variable `${{MongoDB.MONGO_URL}}`.
-6. Web Service → **Settings** → **Networking** → **Generate Domain**.
-7. Sau khi có domain, redeploy Web Service một lần để ứng dụng tự đăng ký Telegram webhook.
-8. Thay menu minh họa trong `src/domain/menu.js` bằng menu thật.
-9. Chỉ sau khi kiểm tra giá và món, đổi `ORDERS_ENABLED=true` rồi redeploy.
-10. Kiểm tra `https://TEN-DOMAIN/health` trả về `{ "ok": true }`.
-11. Nhắn `/start` cho Bot và thử mở Mini App.
-
-## Cấu hình Railway đi kèm
-
-`railway.json` ép Railway dùng Railpack, chạy `npm start`, healthcheck `/health`, và tự khởi động lại khi tiến trình lỗi.
-
-## Bảo mật
-
-- Không đưa `.env` hoặc Bot Token lên GitHub.
-- `ALLOW_DEV_TELEGRAM_BYPASS` phải là `false` trên production.
-- `ORDERS_ENABLED=false` giữ hệ thống ở chế độ xem menu, chưa nhận đơn; chỉ bật sau khi menu thật đã hoàn tất.
-- Chỉ Telegram ID trong `TELEGRAM_MANAGER_IDS` được đổi trạng thái đơn.
-- Backend xác minh Telegram `initData` và tự tính lại giá từ menu.
+Ngoài Telegram sẽ không có `initData` để ký request. Đặt
+`ALLOW_DEV_TELEGRAM_BYPASS=true` và `NODE_ENV=development` để thử luồng đặt đơn;
+cấu hình này bị chặn cứng ở production.
 
 ## Lệnh chính
 
 ```bash
-npm start
-npm test
-npm run set-webhook
+npm start           # chạy production
+npm run dev         # chạy kèm watch
+npm test            # chạy toàn bộ test
+npm run test:watch  # test ở chế độ watch
+npm run set-webhook # đặt lại webhook thủ công
 ```
 
-Webhook được tự cấu hình khi `AUTO_SET_WEBHOOK=true`; lệnh `npm run set-webhook` chỉ dùng khi cần đặt lại thủ công.
+Webhook tự cấu hình khi `AUTO_SET_WEBHOOK=true`.
+
+## API
+
+| Method | Đường dẫn | Mô tả |
+|---|---|---|
+| `GET` | `/health` | Liveness. Luôn 200 khi tiến trình còn sống |
+| `GET` | `/ready` | Readiness. 200 chỉ khi MongoDB đã kết nối |
+| `GET` | `/api/config` | Cấu hình hiển thị cho Mini App |
+| `GET` | `/api/menu` | Danh sách món đang bán |
+| `POST` | `/api/orders` | Tạo đơn. Hỗ trợ header `Idempotency-Key` |
+| `GET` | `/api/orders/:id` | Tra cứu đơn. Khách chỉ xem được đơn của mình |
+
+Cả hai route `/api/orders` đều yêu cầu header `X-Telegram-Init-Data`.
+
+## Bảo mật
+
+- Backend xác minh chữ ký Telegram `initData` bằng HMAC-SHA256 và so sánh
+  timing-safe. `initData` chỉ được chấp nhận trong `INIT_DATA_MAX_AGE_SECONDS`
+  (mặc định 600 giây) để hạn chế giá trị của một chuỗi bị rò rỉ.
+- Giá luôn được tính lại từ menu phía server. Client không thể tự đặt giá.
+- Chỉ Telegram ID trong `TELEGRAM_MANAGER_IDS` được đổi trạng thái đơn.
+- Webhook Telegram được bảo vệ bằng `TELEGRAM_WEBHOOK_SECRET`.
+- `ALLOW_DEV_TELEGRAM_BYPASS` bắt buộc là `false` trên production.
+- `Idempotency-Key` chặn đơn trùng khi mạng chập chờn hoặc khách bấm hai lần.
+- Không đưa `.env` hoặc Bot Token lên GitHub — `.gitignore` đã chặn sẵn.
+
+## Thực đơn
+
+`src/domain/menu.js` chứa **58 món thật** của quán, tên song ngữ Việt – Trung,
+chia thành 9 nhóm để khách không phải cuộn qua một danh sách dài:
+
+| Nhóm | 中文 | Số món |
+|---|---|---|
+| Phở & Bún | 粉面类 | 7 |
+| Cơm | 饭类 | 4 |
+| Bánh mì | 越南面包 | 6 |
+| Mì xào | 炒面 | 2 |
+| Món đặc biệt | 特色菜 | 5 |
+| Ăn vặt | 小吃 | 8 |
+| Cà phê | 咖啡 | 4 |
+| Sinh tố & Nước ép | 奶昔果汁 | 9 |
+| Trà & Giải khát | 茶饮 | 13 |
+
+Giá tính bằng LKR, hiển thị với ký hiệu `Rs`. Khách tìm món được bằng cả tiếng
+Việt (không cần dấu) lẫn tiếng Trung.
+
+## Trước khi mở bán thật
+
+`ORDERS_ENABLED=false` giữ hệ thống ở chế độ chỉ xem menu. Món và giá đã là dữ
+liệu thật, nhưng **ảnh món thì chưa có** — mọi món đang hiển thị placeholder.
+Xem `src/domain/menu.js` để biết lý do bộ ảnh cũ bị loại bỏ. Khi có ảnh thật,
+đặt file vào `public/images/menu/` rồi điền `imageUrl` cho từng món.
+
+Muốn làm nổi bật vài món ở khu "Món được chọn nhiều", đặt `featured: true` và
+`badge: 'Bán chạy'` cho đúng những món quán thật sự bán chạy.

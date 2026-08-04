@@ -31,8 +31,19 @@ describe('frontend assets', () => {
     expect(csp).toContain('https://fonts.gstatic.com');
   });
 
+  it('serves the stylesheets the page links', async () => {
+    const app = createTestApp();
+    for (const href of ['/styles.css', '/manus-fixes.css']) {
+      const response = await request(app).get(href);
+      expect(response.status, `${href} must be served`).toBe(200);
+    }
+  });
+
   it('does not reuse the same image URL for different dishes', () => {
-    const urls = menuCatalog.map((item) => item.imageUrl);
+    // Dishes without a photo all share the placeholder by design, so only the
+    // ones carrying a real photo are required to be distinct. Reusing a photo
+    // is what put a picture of bún bò on the mango smoothie.
+    const urls = menuCatalog.map((item) => item.imageUrl).filter(Boolean);
     expect(new Set(urls).size).toBe(urls.length);
   });
 

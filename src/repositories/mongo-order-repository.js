@@ -1,9 +1,12 @@
 import mongoose from 'mongoose';
-import { assertTransition } from '../domain/order-status.js';
+import { InvalidTransitionError, previousStatesFor } from '../domain/order-status.js';
 
 const orderSchema = new mongoose.Schema(
   {
     _id: { type: String, required: true },
+    // Set only when the client sends an Idempotency-Key. `sparse` keeps the
+    // unique index from colliding across the many orders that have no key.
+    idempotencyKey: { type: String, index: { unique: true, sparse: true } },
     telegramUserId: { type: Number, required: true, index: true },
     telegramUsername: { type: String, default: '' },
     telegramDisplayName: { type: String, required: true },
@@ -28,21 +31,23 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 
+orderSchema.index({ createdAt: -1 });
+
 const OrderModel = mongoose.models.Order ?? mongoose.model('Order', orderSchema);
 
 function normalize(document) {
   if (!document) return null;
   const object = document.toObject ? document.toObject() : document;
-  return {
-    ...object,
-    id: object._id,
-    _id: undefined
-  };
+  const { _id, ...rest } = object;
+  return { ...rest, id: _id };
 }
 
 export class MongoOrderRepository {
   async create(order) {
-    const created = await OrderModel.create({ ...order, _id: order.id, id: undefined });
+    const { id, createdAt, updatedAt, ...rest } = order;
+    // `timestamps: true` owns createdAt/updatedAt, so drop the caller's values
+    // here instead of passing values that mongoose will silently overwrite.
+    const created = await OrderModel.create({ ...rest, _id: id });
     return normalize(created);
   }
 
@@ -50,18 +55,26 @@ export class MongoOrderRepository {
     return normalize(await OrderModel.findById(id).lean());
   }
 
-  async updateStatus(id, nextStatus) {
-    const current = await OrderModel.findById(id).lean();
-    if (!current) return null;
-    assertTransition(current.status, nextStatus);
+  async findByIdempotencyKey(idempotencyKey) {
+    if (!idempotencyKey) return null;
+    return normalize(await OrderModel.findOne({ idempotencyKey }).lean());
+  }
 
+  async updateStatus(id, nextStatus) {
+    // One conditional update: the status filter is the concurrency guard, so
+    // two managers tapping at the same moment cannot both win.
     const updated = await OrderModel.findOneAndUpdate(
-      { _id: id, status: current.status },
+      { _id: id, status: { $in: previousStatesFor(nextStatus) } },
       { $set: { status: nextStatus } },
       { new: true }
     ).lean();
 
-    if (!updated) throw new Error('Order status changed concurrently');
-    return normalize(updated);
+    if (updated) return normalize(updated);
+
+    // Nothing matched: the order is either gone or no longer in a state that
+    // allows this transition. Tell those two apart for the caller.
+    const current = await OrderModel.findById(id).lean();
+    if (!current) return null;
+    throw new InvalidTransitionError(current.status, nextStatus);
   }
 }

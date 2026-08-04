@@ -1,17 +1,18 @@
 # Dependencies
 node_modules/
 
-# Secrets — never commit real credentials.
-# ENVIRONMENT-VARIABLES.example.txt is the template and stays tracked.
+# Environment secrets — never commit real Bot Token / MongoDB URI
 .env
 .env.*
 !.env.example
 
-# Build / test output
-coverage/
-dist/
+# Logs
 *.log
 npm-debug.log*
+
+# Test & build output
+coverage/
+dist/
 
 # OS / editor
 .DS_Store
