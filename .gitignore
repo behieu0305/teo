@@ -19,3 +19,5 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
+# Ảnh AI sinh ra, xem lại rồi mới đưa qua npm run menu:photos
+anh-mon-ai/
