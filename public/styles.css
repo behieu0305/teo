@@ -97,6 +97,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 .status-location { display: inline-flex; align-items: center; gap: 7px; margin-right: auto; }
 .status-open { display: inline-flex; align-items: center; gap: 7px; color: var(--green); font-weight: 800; }
 .status-open i { width: 8px; height: 8px; border-radius: 50%; background: var(--green-dot); box-shadow: 0 0 0 4px rgba(110,154,87,.13); }
+/* Outside opening hours the badge must not keep wearing the "open" green. */
+.status-open.is-closed { color: var(--muted); }
+.status-open.is-closed i { background: #b3a396; box-shadow: 0 0 0 4px rgba(179,163,150,.16); }
 .status-hours { font-weight: 700; }
 
 .hero {
