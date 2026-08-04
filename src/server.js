@@ -58,6 +58,15 @@ async function configureWebhookOnce() {
   webhookConfigured = true;
 }
 
+// Registered as soon as the HTTP server is up, NOT after MongoDB connects.
+// The bot only needs the database to persist orders; /start, the Mini App button
+// and webhook delivery have to keep working while MONGODB_URI is still wrong or
+// the database is still booting. Chaining the two meant a bad URI left the bot
+// completely silent while /health kept returning 200 and Railway stayed green.
+configureWebhookOnce().catch((error) => {
+  logger.error('webhook_auto_configure_failed', { error: error.message });
+});
+
 async function connectMongoUntilReady(uri) {
   let attempt = 0;
 
@@ -72,13 +81,6 @@ async function connectMongoUntilReady(uri) {
       logger.info('mongodb_connected', { attempts: attempt });
       databaseDegraded = false;
       everConnected = true;
-
-      try {
-        await configureWebhookOnce();
-      } catch (error) {
-        logger.error('webhook_auto_configure_failed', { error: error.message });
-      }
-
       return;
     } catch (error) {
       const delayMs = Math.min(30_000, 2_000 * attempt);
