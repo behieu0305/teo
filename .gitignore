@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit real credentials.
+# ENVIRONMENT-VARIABLES.example.txt is the template and stays tracked.
+.env
+.env.*
+!.env.example
+
+# Build / test output
+coverage/
+dist/
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
