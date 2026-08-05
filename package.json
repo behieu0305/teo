@@ -5,11 +5,11 @@
   "type": "module",
   "description": "Fresh Telegram Mini App + Bot ordering system",
   "scripts": {
-    "dev": "node --watch src/server.js",
+    "dev": "NODE_ENV=${NODE_ENV:-development} node --watch src/server.js",
     "start": "node src/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "set-webhook": "node scripts/set-webhook.js",
+    "set-webhook": "NODE_ENV=${NODE_ENV:-development} node scripts/set-webhook.js",
     "menu:photos": "node scripts/menu-photos.js",
     "menu:generate": "node scripts/generate-menu-photos.js"
   },

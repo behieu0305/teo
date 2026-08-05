@@ -83,8 +83,14 @@ describe('production guardrails', () => {
 });
 
 describe('initData lifetime', () => {
-  it('defaults to a window shorter than Telegram’s one hour maximum', () => {
-    expect(loadConfig(base).INIT_DATA_MAX_AGE_SECONDS).toBe(600);
+  // The old assertion here (600s, described as "shorter than Telegram's one
+  // hour maximum") had two things wrong with it. Telegram publishes no maximum
+  // — the only official guidance is "you can additionally check the auth_date
+  // field". And because initData is minted once at launch and never refreshed,
+  // 600s did not bound request latency; it bounded how long a customer could
+  // keep the app open before their order was rejected.
+  it('defaults to a window a real ordering session survives', () => {
+    expect(loadConfig(base).INIT_DATA_MAX_AGE_SECONDS).toBe(3600);
   });
 
   it('accepts an override', () => {

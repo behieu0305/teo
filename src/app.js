@@ -1,3 +1,4 @@
+import net from 'node:net';
 import path from 'node:path';
 import express from 'express';
 import helmet from 'helmet';
@@ -18,6 +19,86 @@ const TELEGRAM_FRAME_ANCESTORS = ['https://web.telegram.org', 'https://*.telegra
 const SHOP_TIMEZONE = 'Asia/Colombo';
 const SHOP_OPENS_AT = '07:00';
 const SHOP_CLOSES_AT = '17:00';
+
+// express-rate-limit keys on req.ip, which for an IPv6 client is a full /128
+// address. Every IPv6 customer is handed at least a /64 by their ISP, so one
+// person can walk 2^64 addresses inside their own allocation and get a fresh
+// 10-orders-per-minute budget for each one — the limit stops existing exactly
+// where it is needed. Buckets are therefore keyed on the /64 prefix, which is
+// the smallest unit an operator actually hands out.
+function ipv6Prefix64(address) {
+  const [head, tail] = address.split('::');
+  const headGroups = head ? head.split(':') : [];
+  const tailGroups = tail ? tail.split(':') : [];
+  const groups =
+    tail === undefined
+      ? headGroups
+      : [
+          ...headGroups,
+          ...Array(Math.max(8 - headGroups.length - tailGroups.length, 0)).fill('0'),
+          ...tailGroups
+        ];
+
+  return groups
+    .slice(0, 4)
+    .map((group) => (group || '0').toLowerCase().padStart(4, '0'))
+    .join(':');
+}
+
+// Railway's edge sets X-Real-IP and documents it as "for identifying client's
+// remote IP". It does NOT document what it does with a client-supplied
+// X-Forwarded-For — append, replace or pass through — and support confirmed the
+// behaviour is undocumented. `trust proxy: 1` makes req.ip the last XFF entry,
+// which is the real client only if the edge appends. Rather than bet the rate
+// limiter on an undocumented detail, prefer the header Railway does document,
+// and keep req.ip as the fallback for local runs and tests where it is absent.
+function clientAddress(req) {
+  const realIp = req.get?.('x-real-ip')?.trim();
+  if (realIp) return realIp;
+  return req.ip;
+}
+
+// Logged once per process so the assumption above can be checked against a real
+// request in the Railway logs instead of being taken on trust. One line per
+// deploy is cheap; getting this wrong silently is not.
+let forwardingLogged = false;
+export function logForwardingHeadersOnce(req) {
+  if (forwardingLogged) return;
+  forwardingLogged = true;
+  logger.info('client_ip_resolution', {
+    xForwardedFor: req.get?.('x-forwarded-for') ?? null,
+    xRealIp: req.get?.('x-real-ip') ?? null,
+    reqIp: req.ip ?? null,
+    resolvedKey: clientRateLimitKey(req)
+  });
+}
+
+export function clientRateLimitKey(req) {
+  const ip = clientAddress(req);
+  if (!ip) {
+    // Replacing the default keyGenerator also drops the library's own warning
+    // for this case. It matters: with no address every caller shares a single
+    // bucket, so the whole API throttles at one client's budget.
+    logger.warn('rate_limit_missing_ip', { requestId: req.id });
+    return 'unknown';
+  }
+  // Express hands back whatever the proxy wrote, unnormalised: an
+  // X-Forwarded-For entry may legitimately arrive as "[2001:db8::1]" or
+  // "[2001:db8::1]:443". Left alone, each spelling of one address is a separate
+  // bucket, which is the very rotation this function exists to stop. Strip the
+  // brackets, any port, and a link-local zone id ("fe80::1%eth0") first.
+  const address = ip
+    .replace(/^\[([^\]]+)\](?::\d+)?$/, '$1')
+    .split('%')[0];
+
+  if (net.isIPv4(address)) return address;
+  // ::ffff:203.0.113.9 is an IPv4 client arriving on a dual-stack socket.
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(address);
+  if (mapped) return mapped[1];
+  if (!net.isIPv6(address)) return address;
+
+  return `${ipv6Prefix64(address)}::/64`;
+}
 
 export function createApp({ orderRepository, bot, config, isDatabaseReady = () => true }) {
   const app = express();
@@ -55,7 +136,11 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
       windowMs: 60_000,
       limit: 120,
       standardHeaders: true,
-      legacyHeaders: false
+      legacyHeaders: false,
+      keyGenerator: (req) => {
+        logForwardingHeadersOnce(req);
+        return clientRateLimitKey(req);
+      }
     })
   );
 
@@ -68,6 +153,7 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
       limit: 10,
       standardHeaders: true,
       legacyHeaders: false,
+      keyGenerator: clientRateLimitKey,
       message: { error: 'Bạn gửi đơn quá nhanh. Vui lòng thử lại sau một phút.' }
     })
   );

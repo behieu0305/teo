@@ -7,7 +7,16 @@ const booleanFromString = z
   .transform((value) => value === 'true');
 
 const schema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  // Deliberately NOT defaulted. Every production guard below — the ban on
+  // ALLOW_DEV_TELEGRAM_BYPASS, the HTTPS requirement — lives inside
+  // `if (NODE_ENV === 'production')`. With a default, a deploy that simply
+  // forgets the variable silently runs with all of them switched off, which is
+  // the exact opposite of what a default is meant to protect against. Refusing
+  // to boot is the safe failure: it is loud, immediate, and fixed in one click.
+  NODE_ENV: z.enum(['development', 'test', 'production'], {
+    message:
+      'NODE_ENV must be set explicitly to development, test or production — the production safety checks are keyed on it'
+  }),
   PORT: z.coerce.number().int().positive().default(3000),
   PUBLIC_BASE_URL: z.string().url(),
   MINI_APP_URL: z.string().url(),
@@ -18,9 +27,19 @@ const schema = z.object({
   ALLOW_DEV_TELEGRAM_BYPASS: booleanFromString,
   AUTO_SET_WEBHOOK: booleanFromString.default('true'),
   ORDERS_ENABLED: booleanFromString.default('false'),
-  // An initData string stays replayable for its whole lifetime, so keep the
-  // window short enough that a leaked one cannot be used to place orders.
-  INIT_DATA_MAX_AGE_SECONDS: z.coerce.number().int().positive().max(3600).default(600)
+  // Telegram mints initData once, when the Mini App is opened, and never
+  // refreshes it: auth_date is frozen at launch for the whole session (the
+  // client only calls messages.prolongWebView, which issues nothing new). So
+  // this is not a request-latency budget — it is a cap on how long a customer
+  // may keep the app open before their order is rejected.
+  //
+  // At 600s anyone who browsed 58 dishes, typed a phone number and an address,
+  // then hit "Gửi đơn hàng" more than ten minutes after opening got a 401 and
+  // lost the order, with no way to recover but to reopen the app. An hour keeps
+  // a leaked initData from being useful indefinitely while costing no real
+  // orders. Raise it if customers still hit the wall; the exposure is limited
+  // to placing orders as the victim (no payment data is involved).
+  INIT_DATA_MAX_AGE_SECONDS: z.coerce.number().int().positive().max(86_400).default(3600)
 });
 
 function railwayPublicUrl(raw) {

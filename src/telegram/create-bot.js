@@ -43,7 +43,25 @@ export function createTelegramBot({
     );
   });
 
-  bot.action(/^order:(confirm|shipping|complete|cancel):([a-f0-9-]+)$/i, async (ctx) => {
+  bot.action(
+    ORDER_ACTION_PATTERN,
+    createOrderActionHandler({ orderRepository, managerIds })
+  );
+
+  bot.catch((error) => {
+    logger.error('telegram_bot_error', { error: error.message, stack: error.stack });
+  });
+
+  return bot;
+}
+
+export const ORDER_ACTION_PATTERN = /^order:(confirm|shipping|complete|cancel):([a-f0-9-]+)$/i;
+
+// Exported so the fan-out below can be exercised directly. Driving it through
+// bot.handleUpdate would mean asserting against Telegraf's private middleware
+// chain, which tells us nothing about whether every manager's card got updated.
+export function createOrderActionHandler({ orderRepository, managerIds }) {
+  return async function handleOrderAction(ctx) {
     const [, action, orderId] = ctx.match;
 
     if (!managerIds.includes(ctx.from.id)) {
@@ -82,13 +100,41 @@ export function createTelegramBot({
       `Đã chuyển sang: ${statusIcon(updated.status)} ${statusLabel(updated.status)}`
     );
 
-    try {
-      await ctx.editMessageText(formatOrderForManager(updated), {
-        parse_mode: 'HTML',
-        ...managerKeyboard(updated)
+    // ctx.editMessageText only touches the message the callback came from, so
+    // with two or more managers everyone else keeps looking at a card that
+    // still says "Chờ xác nhận" with live action buttons on it — a second
+    // manager then taps Confirm on an order that is already out for delivery.
+    // Every delivered copy is edited, using the refs stored when the order was
+    // created; the tapped message is the fallback for orders created before
+    // those refs existed.
+    const text = formatOrderForManager(updated);
+    const extra = { parse_mode: 'HTML', ...managerKeyboard(updated) };
+    const copies = (updated.managerMessages ?? []).filter(
+      (copy) => Number.isInteger(copy?.chatId) && Number.isInteger(copy?.messageId)
+    );
+
+    if (copies.length === 0) {
+      try {
+        await ctx.editMessageText(text, extra);
+      } catch (error) {
+        logger.warn('manager_message_edit_failed', { orderId, error: error.message });
+      }
+    } else {
+      const edits = await Promise.allSettled(
+        copies.map((copy) =>
+          ctx.telegram.editMessageText(copy.chatId, copy.messageId, undefined, text, extra)
+        )
+      );
+
+      edits.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          logger.warn('manager_message_edit_failed', {
+            orderId,
+            chatId: copies[index].chatId,
+            error: result.reason?.message
+          });
+        }
       });
-    } catch (error) {
-      logger.warn('manager_message_edit_failed', { orderId, error: error.message });
     }
 
     try {
@@ -100,11 +146,5 @@ export function createTelegramBot({
         error: error.message
       });
     }
-  });
-
-  bot.catch((error) => {
-    logger.error('telegram_bot_error', { error: error.message, stack: error.stack });
-  });
-
-  return bot;
+  };
 }

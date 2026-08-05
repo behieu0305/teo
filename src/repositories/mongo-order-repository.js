@@ -8,6 +8,15 @@ const orderSchema = new mongoose.Schema(
     // unique index from colliding across the many orders that have no key.
     idempotencyKey: { type: String, index: { unique: true, sparse: true } },
     telegramUserId: { type: Number, required: true, index: true },
+    // One entry per manager message actually delivered for this order. A status
+    // change has to edit every copy, not just the one the acting manager tapped.
+    managerMessages: {
+      type: [{ _id: false, chatId: Number, messageId: Number }],
+      default: []
+    },
+    // 'DELIVERED' | 'FAILED', written once the fan-out settles. Persisted so an
+    // idempotent replay can report what really happened instead of guessing.
+    managerNotification: { type: String, default: null },
     telegramUsername: { type: String, default: '' },
     telegramDisplayName: { type: String, required: true },
     customer: {
@@ -44,11 +53,33 @@ function normalize(document) {
 
 export class MongoOrderRepository {
   async create(order) {
-    const { id, createdAt, updatedAt, ...rest } = order;
+    const { id, createdAt, updatedAt, idempotencyKey, ...rest } = order;
     // `timestamps: true` owns createdAt/updatedAt, so drop the caller's values
     // here instead of passing values that mongoose will silently overwrite.
-    const created = await OrderModel.create({ ...rest, _id: id });
+    const document = { ...rest, _id: id };
+
+    // A sparse unique index skips *missing* fields — it does NOT skip fields
+    // explicitly set to null; null is a value and gets indexed like any other.
+    // buildOrder always emits idempotencyKey (null when the client sent no
+    // header), so writing it through would let exactly one key-less order
+    // exist: the second one dies on E11000, and the recovery branch in the
+    // route is gated on `idempotencyKey` being truthy, so it rethrows as a 500.
+    // Omitting the field is what actually makes `sparse` do its job.
+    if (idempotencyKey) document.idempotencyKey = idempotencyKey;
+
+    const created = await OrderModel.create(document);
     return normalize(created);
+  }
+
+  // Best effort: the order already exists, so a failure here must not fail the
+  // request. Returning null lets the caller carry on with the in-memory copy.
+  async recordManagerNotification(id, { managerMessages, managerNotification }) {
+    const updated = await OrderModel.findByIdAndUpdate(
+      id,
+      { $set: { managerMessages, managerNotification } },
+      { new: true }
+    ).lean();
+    return normalize(updated);
   }
 
   async findById(id) {

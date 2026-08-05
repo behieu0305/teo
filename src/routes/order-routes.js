@@ -7,6 +7,22 @@ import { logger } from '../utils/logger.js';
 
 const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
 
+// A replay must report the fan-out that actually happened. Hardcoding
+// 'DELIVERED' told the customer the shop had been notified even when every
+// sendMessage had failed, which is the one case where they needed to phone in.
+// `null` means the original request has not finished its fan-out yet — that is
+// only reachable on the concurrent-submit path, so it is 'PENDING', not a lie
+// in either direction.
+function replayResponse(order) {
+  return {
+    orderId: order.id,
+    status: order.status,
+    total: order.total,
+    managerNotification: order.managerNotification ?? 'PENDING',
+    replayed: true
+  };
+}
+
 export function createOrderRouter({ orderRepository, bot, config, isDatabaseReady = () => true }) {
   const router = Router();
 
@@ -64,13 +80,7 @@ export function createOrderRouter({ orderRepository, bot, config, isDatabaseRead
             return res.status(409).json({ error: 'Idempotency-Key đã được dùng cho đơn khác.' });
           }
           logger.info('order_idempotent_replay', { requestId: req.id, orderId: existing.id });
-          return res.status(200).json({
-            orderId: existing.id,
-            status: existing.status,
-            total: existing.total,
-            managerNotification: 'DELIVERED',
-            replayed: true
-          });
+          return res.status(200).json(replayResponse(existing));
         }
       }
 
@@ -85,13 +95,15 @@ export function createOrderRouter({ orderRepository, bot, config, isDatabaseRead
         if (error?.code === 11000 && idempotencyKey) {
           const winner = await orderRepository.findByIdempotencyKey(idempotencyKey);
           if (winner) {
-            return res.status(200).json({
-              orderId: winner.id,
-              status: winner.status,
-              total: winner.total,
-              managerNotification: 'DELIVERED',
-              replayed: true
-            });
+            // Same ownership check as the fast replay path above. Without it,
+            // guessing another customer's key loses the race on purpose and
+            // reads back their order id, status and total through the 500-
+            // avoidance branch — the check on the read path is bypassed.
+            if (winner.telegramUserId !== telegramUser.id) {
+              return res.status(409).json({ error: 'Idempotency-Key đã được dùng cho đơn khác.' });
+            }
+            logger.info('order_idempotent_replay', { requestId: req.id, orderId: winner.id });
+            return res.status(200).json(replayResponse(winner));
           }
         }
         throw error;
@@ -106,9 +118,33 @@ export function createOrderRouter({ orderRepository, bot, config, isDatabaseRead
         )
       );
 
+      // Keep the chat id next to the message id: a status change later has to
+      // edit every manager's copy, and Telegram needs both to address an edit.
+      const managerMessages = notificationResults.flatMap((result, index) =>
+        result.status === 'fulfilled' && Number.isInteger(result.value?.message_id)
+          ? [{ chatId: config.managerIds[index], messageId: result.value.message_id }]
+          : []
+      );
+
       const deliveredCount = notificationResults.filter(
         (result) => result.status === 'fulfilled'
       ).length;
+      const managerNotification = deliveredCount > 0 ? 'DELIVERED' : 'FAILED';
+
+      try {
+        await orderRepository.recordManagerNotification(created.id, {
+          managerMessages,
+          managerNotification
+        });
+      } catch (error) {
+        // The order is already saved; losing the message refs only costs us the
+        // fan-out edit later, so it must not turn an accepted order into a 500.
+        logger.warn('order_manager_messages_not_recorded', {
+          requestId: req.id,
+          orderId: created.id,
+          error: error.message
+        });
+      }
 
       if (deliveredCount === 0) {
         logger.error('order_manager_notification_failed', {
@@ -131,7 +167,7 @@ export function createOrderRouter({ orderRepository, bot, config, isDatabaseRead
         orderId: created.id,
         status: created.status,
         total: created.total,
-        managerNotification: deliveredCount > 0 ? 'DELIVERED' : 'FAILED'
+        managerNotification
       });
     } catch (error) {
       return handleOrderError(error, res, next);
@@ -190,6 +226,17 @@ function handleOrderError(error, res, next) {
     error.message?.startsWith('Quantity is too large')
   ) {
     return res.status(400).json({ error: error.message });
+  }
+
+  // initData is minted once when the Mini App opens and never refreshes, so an
+  // expiry is not "invalid credentials" — it just means the app has been open a
+  // while. The customer can only fix it by reopening the app, so say which of
+  // the two it is and give the client a code it can act on.
+  if (error.message === 'Expired Telegram initData') {
+    return res.status(401).json({
+      code: 'INIT_DATA_EXPIRED',
+      error: 'Phiên Telegram đã hết hạn. Vui lòng đóng và mở lại ứng dụng từ Telegram rồi gửi đơn.'
+    });
   }
 
   if (error.message?.includes('Telegram')) {

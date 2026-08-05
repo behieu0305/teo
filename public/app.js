@@ -370,10 +370,29 @@ function handleAction(event) {
   if (button.dataset.action === 'decrease') setQuantity(id, -1);
 }
 
-function showSuccess(orderId) {
-  nodes.successMessage.textContent = `Mã đơn ${orderId}. Quán sẽ xác nhận qua Telegram.`;
+// Only DELIVERED is a promise we can keep. FAILED means every message to the
+// shop bounced and nobody there knows the order exists — telling that customer
+// "quán sẽ xác nhận qua Telegram" leaves them waiting for a confirmation that
+// is never coming. Anything else (PENDING on a retry sent while the first
+// request is still fanning out, or a missing field from an older server) is
+// genuinely not known yet, so it must not be dressed up as either one.
+const SUCCESS_COPY = {
+  DELIVERED: (id) => `Mã đơn ${id}. Quán sẽ xác nhận qua Telegram.`,
+  FAILED: (id) =>
+    `Mã đơn ${id}. Đơn đã được lưu nhưng chưa gửi được tới quán — vui lòng nhắn Telegram cho quán để xác nhận.`
+};
+
+function showSuccess(orderId, managerNotification) {
+  const copy =
+    SUCCESS_COPY[managerNotification] ??
+    ((id) => `Mã đơn ${id}. Đơn đã được ghi nhận, đang gửi tới quán…`);
+
+  nodes.successMessage.textContent = copy(orderId);
   nodes.successToast.hidden = false;
-  window.setTimeout(() => { nodes.successToast.hidden = true; }, 5200);
+  window.setTimeout(
+    () => { nodes.successToast.hidden = true; },
+    managerNotification === 'FAILED' ? 12000 : 5200
+  );
 }
 
 // Kept for the whole lifetime of one order attempt so a retry after a dropped
@@ -434,8 +453,10 @@ async function submitOrder() {
     renderMenu();
     renderCart();
     closeCart();
-    showSuccess(result.orderId);
-    tg?.HapticFeedback?.notificationOccurred('success');
+    showSuccess(result.orderId, result.managerNotification);
+    tg?.HapticFeedback?.notificationOccurred(
+      result.managerNotification === 'FAILED' ? 'warning' : 'success'
+    );
   } catch (error) {
     nodes.feedback.textContent = error.message;
     tg?.HapticFeedback?.notificationOccurred('error');
