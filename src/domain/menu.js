@@ -5,10 +5,14 @@
 // ghi nhóm thức uống bằng "Rp" nhưng phần đầu file khẳng định toàn bộ đơn vị là
 // LKR và quán ở Colombo, nên "Rp" được hiểu là cách viết tắt của "Rs".
 //
-// Ảnh món: chưa có ảnh dùng được. Bộ ảnh cũ trong public/images/menu/ chỉ là ba
-// tấm gốc cắt lại nên phần lớn hiển thị sai món, lại bị in cứng chữ "BÁN CHẠY"
-// vào pixel. Toàn bộ imageUrl để null và giao diện hiện placeholder cho tới khi
-// có ảnh thật. Khi có ảnh, đặt file vào public/images/menu/ rồi điền đường dẫn.
+// Ảnh món: bộ ảnh cũ trong public/images/menu/ chỉ là ba tấm gốc cắt lại nên
+// phần lớn hiển thị sai món, đã gỡ bỏ. Món nào chưa có ảnh thì giao diện hiện
+// menu-placeholder.svg — thà không có ảnh còn hơn cho khách xem ảnh món khác.
+//
+// Đường dẫn ảnh KHÔNG khai báo tay ở file này. Thả ảnh vào public/images/menu/
+// rồi chạy `npm run menu:photos`; lệnh đó sinh lại menu-images.js. Làm vậy để
+// không bao giờ có chuyện menu trỏ tới một file không tồn tại.
+import { menuImages } from './menu-images.js';
 
 export const CATEGORIES = Object.freeze([
   { id: 'pho-bun', name: 'Phở & Bún', nameZh: '粉面类' },
@@ -29,7 +33,7 @@ const item = (id, name, nameZh, price, category) =>
     nameZh,
     price,
     category,
-    imageUrl: null,
+    imageUrl: menuImages[id] ?? null,
     available: true,
     featured: false
   });

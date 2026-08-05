@@ -71,10 +71,22 @@ describe('menu catalog', () => {
     expect(getCategory('khong-co')).toBeUndefined();
   });
 
-  it('marks every dish available and photo-less for now', () => {
+  it('marks every dish available', () => {
     for (const item of menuCatalog) {
       expect(item.available).toBe(true);
-      expect(item.imageUrl).toBeNull();
+    }
+  });
+
+  it('gives each dish either a real photo path or nothing at all', () => {
+    // This used to assert imageUrl is always null, which was only true while no
+    // photography existed. Pinning that snapshot would have failed the moment a
+    // real photo landed. What must hold forever is the shape: a usable path, or
+    // null so the UI falls back to the placeholder — never a half-formed value.
+    for (const item of menuCatalog) {
+      if (item.imageUrl === null) continue;
+      expect(item.imageUrl, `${item.id} has a malformed image path`).toMatch(
+        /^\/images\/menu\/[a-z0-9-]+\.(webp|jpg|png)$/
+      );
     }
   });
 });
