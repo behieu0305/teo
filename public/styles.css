@@ -242,6 +242,10 @@ img.is-placeholder { object-fit: contain; background: var(--gold-soft); }
 .footer-brand strong { font-family: "Playfair Display", Georgia, serif; font-size: 1.1rem; font-weight: 700; }
 .footer p { margin: 8px 0 0; color: rgba(255,255,255,.7); font-size: .78rem; line-height: 1.5; }
 .footer small { display: block; margin-bottom: 8px; color: var(--gold); font-size: .65rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+/* Inherits the surrounding <strong> so the contact line keeps reading as part
+   of the footer instead of turning into a default blue underlined link. */
+.footer-link { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.35); }
+.footer-link:hover, .footer-link:focus-visible { color: var(--gold); border-bottom-color: var(--gold); }
 
 .cart-bar {
   position: fixed; left: 50%; bottom: calc(14px + var(--safe-bottom)); z-index: 60; transform: translateX(-50%);

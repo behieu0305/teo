@@ -16,9 +16,16 @@ const TELEGRAM_FRAME_ANCESTORS = ['https://web.telegram.org', 'https://*.telegra
 
 // The shop is in Colombo; Railway containers run on UTC. Keeping the zone next
 // to the hours means the open/closed badge is judged by the shop's clock.
+//
+// The shop now trades round the clock. The window is kept as a real 00:00–24:00
+// span rather than deleting the badge, so isShopOpen() still answers a genuine
+// question and the badge can go back to real hours by editing these two lines.
+// 24:00 (not 00:00) is deliberate: an open === close window would make
+// `now >= open && now < close` false at every minute of the day and read as
+// permanently closed.
 const SHOP_TIMEZONE = 'Asia/Colombo';
-const SHOP_OPENS_AT = '07:00';
-const SHOP_CLOSES_AT = '17:00';
+const SHOP_OPENS_AT = '00:00';
+const SHOP_CLOSES_AT = '24:00';
 
 // express-rate-limit keys on req.ip, which for an IPv6 client is a full /128
 // address. Every IPv6 customer is handed at least a /64 by their ISP, so one
@@ -212,7 +219,7 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
       currencyLabel: 'Rs',
       shopName: 'Saigon Street Food',
       location: 'Colombo',
-      openingHours: '07:00 AM – 05:00 PM',
+      openingHours: 'Luôn mở 24/24',
       // Machine-readable twins of openingHours. The badge used to be hardcoded
       // to "Đang mở cửa", so a customer opening the app at midnight was told the
       // shop was open. The client needs the zone too: it must judge by the

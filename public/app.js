@@ -88,25 +88,23 @@ function renderShopStatus() {
   text.textContent = open ? 'Đang mở cửa' : 'Ngoài giờ mở cửa';
 }
 
-function renderBotLink() {
-  const link = document.querySelector('#bot-link');
-  if (!link) return;
-  const username = state.config.botUsername;
-  if (!username) {
-    link.hidden = true;
-    return;
+// Both Telegram links now point at the shop's own account, written straight
+// into index.html. They used to be built from the bot username fetched via
+// /api/config, which meant a failed config request left the customer with no
+// way to reach the shop at all — the link stayed hidden. A person's username
+// has no API to resolve it anyway, so the href lives in the markup and this
+// only adds the in-app behaviour.
+function wireTelegramLinks() {
+  for (const link of document.querySelectorAll('a[data-telegram-link]')) {
+    link.addEventListener('click', (event) => {
+      // target="_blank" is a dead end inside the Telegram WebView; the SDK has to
+      // hand the link back to the client instead.
+      if (tg?.openTelegramLink) {
+        event.preventDefault();
+        tg.openTelegramLink(link.href);
+      }
+    });
   }
-  const url = `https://t.me/${username}`;
-  link.href = url;
-  link.hidden = false;
-  link.addEventListener('click', (event) => {
-    // target="_blank" is a dead end inside the Telegram WebView; the SDK has to
-    // hand the link back to the client instead.
-    if (tg?.openTelegramLink) {
-      event.preventDefault();
-      tg.openTelegramLink(url);
-    }
-  });
 }
 
 function renderTelegramUser() {
@@ -502,6 +500,10 @@ async function init() {
   tg?.setBackgroundColor?.('#f8f1e7');
   renderTelegramUser();
   bindEvents();
+  // Outside the try below on purpose: the contact links must survive a failed
+  // /api/config or /api/menu request, which is exactly when a customer needs
+  // to message the shop.
+  wireTelegramLinks();
 
   try {
     const [configResponse, menuResponse] = await Promise.all([fetch('/api/config'), fetch('/api/menu')]);
@@ -511,7 +513,6 @@ async function init() {
     state.config = { ...state.config, ...(await configResponse.json()) };
     state.orderingEnabled = Boolean(state.config.orderingEnabled);
     renderShopStatus();
-    renderBotLink();
     const menu = await menuResponse.json();
     // Older deploys returned a bare array; accept both so a cached
     // Mini App shell does not break against a newer server.
