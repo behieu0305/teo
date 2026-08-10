@@ -70,7 +70,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
   backdrop-filter: blur(16px);
 }
 .brand { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
-.brand img { width: 42px; height: 42px; flex: 0 0 auto; }
+.brand img { width: 42px; height: 42px; flex: 0 0 auto; object-fit: contain; }
 .brand span { display: grid; min-width: 0; }
 .brand strong { font-family: "Playfair Display", Georgia, serif; font-size: 1.1rem; line-height: 1.05; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
 .brand small { margin-top: 3px; color: var(--muted); font-size: .62rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
@@ -113,6 +113,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 .hero-content { width: min(620px, 92%); }
 .hero-kicker { display: inline-flex; padding: 7px 13px; border: 1px solid rgba(255,241,204,.68); border-radius: 999px; color: var(--gold); font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
 .hero-brand { margin: 18px 0 6px; color: var(--gold); font-size: .76rem; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
+/* Logo đầy đủ chỉ đọc được ở cỡ lớn, nên nó sống ở hero. Topbar và footer dùng
+   huy hiệu tròn vì ở 42px/36px thì phần chữ trong logo chỉ còn là vệt mờ. */
+.hero-logo { display: block; width: clamp(190px, 42vw, 280px); height: auto; margin: 16px 0 10px; filter: drop-shadow(0 10px 26px rgba(0,0,0,.32)); }
 .hero h1 { margin: 0; max-width: 36rem; font-family: "Playfair Display", Georgia, serif; font-size: clamp(2.25rem, 6vw, 3.75rem); line-height: 1.08; font-weight: 700; letter-spacing: 0; overflow-wrap: normal; word-break: normal; hyphens: none; text-wrap: balance; }
 .hero-copy { max-width: 540px; margin: 20px 0 0; color: rgba(255,248,235,.86); font-size: clamp(.95rem, 2vw, 1.05rem); line-height: 1.65; }
 .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 25px; }

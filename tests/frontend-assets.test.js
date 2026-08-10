@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
@@ -36,6 +38,26 @@ describe('frontend assets', () => {
     for (const href of ['/styles.css', '/manus-fixes.css']) {
       const response = await request(app).get(href);
       expect(response.status, `${href} must be served`).toBe(200);
+    }
+  });
+
+  it('ships exactly one HTML document', () => {
+    // A web-UI upload appended the page to itself instead of replacing it, so
+    // index.html carried the whole document twice. Every id then existed twice
+    // and querySelector bound the handlers to the first copy only, the customer
+    // scrolled past a second dead header/hero/menu/footer, and /app.js was
+    // fetched a second time — where `const tg` at the top threw "already been
+    // declared". Everything still looked served: the file is valid enough that
+    // no request fails and no existing assertion notices.
+    const html = readFileSync(path.join(import.meta.dirname, '..', 'public', 'index.html'), 'utf8');
+
+    for (const [label, pattern] of [
+      ['<!doctype html>', /<!doctype html>/gi],
+      ['<html>', /<html[\s>]/gi],
+      ['</html>', /<\/html>/gi],
+      ['<body>', /<body[\s>]/gi]
+    ]) {
+      expect(html.match(pattern) ?? [], `${label} must appear exactly once`).toHaveLength(1);
     }
   });
 

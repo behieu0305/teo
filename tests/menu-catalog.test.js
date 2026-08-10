@@ -55,6 +55,32 @@ describe('menu catalog', () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
+  it('gives no two dishes the same Chinese name', () => {
+    // A Chinese-reading customer picks by the Chinese name alone, so two dishes
+    // sharing one is the same as having no name at all. This also catches the
+    // copy-paste that put 番石榴 (guava) on the soursop smoothie.
+    const seen = new Map();
+    const collisions = [];
+    for (const item of menuCatalog) {
+      if (seen.has(item.nameZh)) collisions.push(`${seen.get(item.nameZh)} = ${item.id} (${item.nameZh})`);
+      seen.set(item.nameZh, item.id);
+    }
+
+    expect(collisions).toEqual([]);
+  });
+
+  it('never labels a dish with a Chinese fruit name that belongs to another dish', () => {
+    // These three were genuinely swapped on the live menu: ổi (guava) was sold
+    // as 金桔汁 (kumquat) while the soursop smoothie carried 番石榴 (guava).
+    const zh = (id) => menuCatalog.find((item) => item.id === id)?.nameZh ?? '';
+
+    expect(zh('oi-ep'), 'ổi = guava = 番石榴').toContain('番石榴');
+    expect(zh('tra-tac'), 'tắc = kumquat = 金桔').toContain('金桔');
+    expect(zh('sinh-to-mang-cau'), 'mãng cầu is not guava').not.toContain('番石榴');
+    // 金钱草 is Lysimachia, a different plant from rau má (Centella asiatica).
+    expect(menuCatalog.filter((item) => item.nameZh.includes('金钱草'))).toEqual([]);
+  });
+
   it('spreads the catalog across categories rather than lumping it together', () => {
     // The point of the categories is that no single tab dumps the whole menu on
     // the customer at once.

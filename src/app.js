@@ -104,9 +104,23 @@ export function createApp({ orderRepository, bot, config, isDatabaseReady = () =
   const app = express();
 
   app.disable('x-powered-by');
-  // Railway terminates TLS at its edge proxy, so without this every client
-  // shares one rate-limit bucket and express-rate-limit refuses to trust
-  // X-Forwarded-For. Use 1 (the single Railway hop), never `true`.
+  // Railway terminates TLS at its edge proxy, so express has to be told to read
+  // the forwarded headers at all.
+  //
+  // The value is deliberately NOT what makes req.ip correct — it cannot be.
+  // Measured against the live deploy, Railway sends:
+  //   X-Forwarded-For: <real client>, <Railway internal router>
+  //   X-Real-IP:       <real client>
+  // That is TWO hops, not one. With `trust proxy: 1` express hands back the
+  // LAST forwarded entry, which is Railway's own internal address — a constant
+  // that is identical for every visitor on earth. An earlier version of this
+  // comment claimed "1 (the single Railway hop)"; it was wrong, and the cost of
+  // being wrong was that every customer shared one rate-limit bucket, so ten
+  // orders a minute was a limit on the whole shop rather than on one person.
+  //
+  // Anything that needs the real caller must therefore go through
+  // clientRateLimitKey() above, which reads X-Real-IP. Raising this to 2 would
+  // happen to work today but re-breaks the moment Railway adds or drops a hop.
   app.set('trust proxy', 1);
 
   app.use(requestLogger());
