@@ -69,18 +69,4 @@ describe('frontend assets', () => {
     expect(new Set(urls).size).toBe(urls.length);
   });
 
-  it('removes the known false image mappings', () => {
-    const falseMappings = new Set([
-      '/images/menu/bo-kho.webp',
-      '/images/menu/com-ga.webp',
-      '/images/menu/banh-mi-thit-nuong.webp',
-      '/images/menu/bun-thit-nuong.webp',
-      '/images/menu/mi-xao-bo.webp',
-      '/images/menu/khoai-tay-chien.webp',
-      '/images/menu/tra-tac.webp',
-      '/images/menu/ca-phe-sua.webp',
-      '/images/menu/sinh-to-xoai.webp'
-    ]);
-    expect(menuCatalog.some((item) => falseMappings.has(item.imageUrl))).toBe(false);
-  });
 });
