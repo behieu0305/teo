@@ -19,7 +19,6 @@ export const CATEGORIES = Object.freeze([
   { id: 'com', name: 'Cơm', nameZh: '饭类' },
   { id: 'banh-mi', name: 'Bánh mì', nameZh: '越南面包' },
   { id: 'mi-xao', name: 'Mì xào', nameZh: '炒面' },
-  { id: 'mon-dac-biet', name: 'Món đặc biệt', nameZh: '特色菜' },
   { id: 'an-vat', name: 'Ăn vặt', nameZh: '小吃' },
   { id: 'ca-phe', name: 'Cà phê', nameZh: '咖啡' },
   { id: 'sinh-to-nuoc-ep', name: 'Sinh tố & Nước ép', nameZh: '奶昔果汁' },
@@ -47,6 +46,9 @@ export const menuCatalog = Object.freeze([
   item('mien-ga-trung-non', 'Miến gà trứng non', '鸡肉嫩蛋粉丝', 3000, 'pho-bun'),
   item('bun-mam-nem', 'Bún mắm nêm', '五花肉干拌粉', 3000, 'pho-bun'),
   item('bun-thit-nuong', 'Bún thịt nướng', '烤肉春卷拌粉', 3000, 'pho-bun'),
+  item('bo-kho', 'Bò kho', '越式炖牛肉', 3000, 'pho-bun'),
+  item('pha-lau-long-bo', 'Phá lấu lòng bò', '越式卤牛杂', 3000, 'pho-bun'),
+  item('cari-ga', 'Cari gà', '咖喱鸡', 2800, 'pho-bun'),
 
   // --- Cơm ---
   item('com-ga', 'Cơm gà xối mỡ', '脆皮鸡饭', 3000, 'com'),
@@ -66,14 +68,9 @@ export const menuCatalog = Object.freeze([
   item('mi-xao-ga', 'Mì xào gà', '鸡肉炒面', 2800, 'mi-xao'),
   item('mi-xao-bo', 'Mì xào bò', '牛肉炒面', 2800, 'mi-xao'),
 
-  // --- Món đặc biệt ---
-  item('bo-kho', 'Bò kho', '越式炖牛肉', 3000, 'mon-dac-biet'),
-  item('pha-lau-long-bo', 'Phá lấu lòng bò', '越式卤牛杂', 3000, 'mon-dac-biet'),
-  item('cari-ga', 'Cari gà', '咖喱鸡', 2800, 'mon-dac-biet'),
-  item('banh-bot-loc', 'Bánh bột lọc', '越式水晶饺', 2500, 'mon-dac-biet'),
-  item('bap-xao', 'Bắp xào', '炒玉米粒', 1500, 'mon-dac-biet'),
-
   // --- Ăn vặt ---
+  item('banh-bot-loc', 'Bánh bột lọc', '越式水晶饺', 2500, 'an-vat'),
+  item('bap-xao', 'Bắp xào', '炒玉米粒', 1500, 'an-vat'),
   item('banh-bo', 'Bánh bò', '蒸米糕', 1000, 'an-vat'),
   item('banh-tieu', 'Bánh tiêu', '越南空心饼', 500, 'an-vat'),
   item('khoai-tay-chien', 'Khoai tây chiên lắc phô mai', '芝士薯条', 1500, 'an-vat'),
